@@ -15,18 +15,17 @@ namespace FluentTerminal.App.ViewModels
     public class TerminalViewModel : ViewModelBase
     {
         private readonly IKeyboardCommandService _keyboardCommandService;
-        private readonly IDispatcherTimer _resizeOverlayTimer;
         private bool _isSelected;
         private bool _hasNewOutput;
-        private string _resizeOverlayContent;
         private string _searchText;
-        private bool _showResizeOverlay;
         private bool _showSearchPanel;
         private TabTheme _tabTheme;
         private TerminalTheme _terminalTheme;
         private string _tabTitle;
         private string _shellTitle;
         private bool _hasCustomTitle;
+        private Overlay _overlay;
+
 
         public TerminalViewModel(ISettingsService settingsService, ITrayProcessCommunicationService trayProcessCommunicationService, IDialogService dialogService,
             IKeyboardCommandService keyboardCommandService, ApplicationSettings applicationSettings, ShellProfile shellProfile,
@@ -52,9 +51,7 @@ namespace FluentTerminal.App.ViewModels
             TabThemes = new ObservableCollection<TabTheme>(SettingsService.GetTabThemes());
             TabTheme = TabThemes.FirstOrDefault(t => t.Id == ShellProfile.TabThemeId);
 
-            _resizeOverlayTimer = dispatcherTimer;
-            _resizeOverlayTimer.Interval = new TimeSpan(0, 0, 2);
-            _resizeOverlayTimer.Tick += OnResizeOverlayTimerFinished;
+            Overlay = new Overlay(dispatcherTimer);
 
             CloseCommand = new RelayCommand(async () => await TryClose().ConfigureAwait(false));
             FindNextCommand = new RelayCommand(FindNext);
@@ -135,12 +132,6 @@ namespace FluentTerminal.App.ViewModels
             set => Set(ref _hasNewOutput, value);
         }
 
-        public string ResizeOverlayContent
-        {
-            get => _resizeOverlayContent;
-            set => Set(ref _resizeOverlayContent, value);
-        }
-
         public string SearchText
         {
             get => _searchText;
@@ -153,27 +144,16 @@ namespace FluentTerminal.App.ViewModels
 
         public ShellProfile ShellProfile { get; }
 
-        public bool ShowResizeOverlay
-        {
-            get => _showResizeOverlay;
-            set
-            {
-                Set(ref _showResizeOverlay, value);
-                if (value)
-                {
-                    if (_resizeOverlayTimer.IsEnabled)
-                    {
-                        _resizeOverlayTimer.Stop();
-                    }
-                    _resizeOverlayTimer.Start();
-                }
-            }
-        }
-
         public bool ShowSearchPanel
         {
             get => _showSearchPanel;
             set => Set(ref _showSearchPanel, value);
+        }
+
+        public Overlay Overlay
+        {
+            get => _overlay;
+            set => Set(ref _overlay, value);
         }
 
         public TabTheme TabTheme
@@ -306,12 +286,6 @@ namespace FluentTerminal.App.ViewModels
             await ApplicationView.RunOnDispatcherThread(() => KeyBindingsChanged?.Invoke(this, EventArgs.Empty));
         }
 
-        private void OnResizeOverlayTimerFinished(object sender, object e)
-        {
-            _resizeOverlayTimer.Stop();
-            ShowResizeOverlay = false;
-        }
-
         private async void OnTerminalOptionsChanged(object sender, TerminalOptions e)
         {
             await ApplicationView.RunOnDispatcherThread(() => OptionsChanged?.Invoke(this, e));
@@ -384,8 +358,7 @@ namespace FluentTerminal.App.ViewModels
 
         private void Terminal_SizeChanged(object sender, TerminalSize e)
         {
-            ResizeOverlayContent = $"{e.Columns} x {e.Rows}";
-            ShowResizeOverlay = true;
+            Overlay.DisplayOverlay($"{e.Columns} x {e.Rows}");
         }
 
         private void Terminal_TitleChanged(object sender, string e)

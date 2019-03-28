@@ -19,11 +19,11 @@
             Padding="6"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
-            Visibility="{x:Bind ViewModel.ShowResizeOverlay, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+            Visibility="{x:Bind ViewModel.Overlay.ShowOverlay, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
             <Grid.Background>
                 <SolidColorBrush Color="{ThemeResource SystemAccentColor}" />
             </Grid.Background>
-            <TextBlock Foreground="White" Text="{x:Bind ViewModel.ResizeOverlayContent, Mode=OneWay}" />
+            <TextBlock Foreground="White" Text="{x:Bind ViewModel.Overlay.Content, Mode=OneWay}" />
         </Grid>
         <RelativePanel
             Grid.Row="1"
