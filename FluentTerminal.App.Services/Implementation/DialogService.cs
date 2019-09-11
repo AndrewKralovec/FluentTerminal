@@ -11,13 +11,23 @@ namespace FluentTerminal.App.Services.Implementation
         private readonly Func<IMessageDialog> _messageDialogFactory;
         private readonly Func<ICreateKeyBindingDialog> _createKeyBindingDialogFactory;
         private readonly Func<IInputDialog> _inputDialogFactory;
+        private readonly Func<ISshConnectionInfoDialog> _sshConnectionInfoDialogFactory;
+        private readonly Func<ICustomCommandDialog> _customCommandDialogFactory;
+        private readonly Func<ISshProfileSelectionDialog> _sshProfileSelectionDialogFactory;
 
-        public DialogService(Func<IShellProfileSelectionDialog> shellProfileSelectionDialogFactory, Func<IMessageDialog> messageDialogFactory, Func<ICreateKeyBindingDialog> createKeyBindingDialogFactory, Func<IInputDialog> inputDialogFactory)
+        public DialogService(Func<IShellProfileSelectionDialog> shellProfileSelectionDialogFactory,
+            Func<IMessageDialog> messageDialogFactory, Func<ICreateKeyBindingDialog> createKeyBindingDialogFactory,
+            Func<IInputDialog> inputDialogFactory, Func<ISshConnectionInfoDialog> sshConnectionInfoDialogFactory,
+            Func<ICustomCommandDialog> customCommandDialogFactory,
+            Func<ISshProfileSelectionDialog> sshProfileSelectionDialogFactory)
         {
             _shellProfileSelectionDialogFactory = shellProfileSelectionDialogFactory;
             _messageDialogFactory = messageDialogFactory;
             _createKeyBindingDialogFactory = createKeyBindingDialogFactory;
             _inputDialogFactory = inputDialogFactory;
+            _sshConnectionInfoDialogFactory = sshConnectionInfoDialogFactory;
+            _customCommandDialogFactory = customCommandDialogFactory;
+            _sshProfileSelectionDialogFactory = sshProfileSelectionDialogFactory;
         }
 
         public Task<KeyBinding> ShowCreateKeyBindingDialog()
@@ -67,6 +77,19 @@ namespace FluentTerminal.App.Services.Implementation
         public Task<ShellProfile> ShowProfileSelectionDialogAsync()
         {
             var dialog = _shellProfileSelectionDialogFactory();
+
+            return dialog.SelectProfile();
+        }
+
+        public Task<SshProfile> ShowSshConnectionInfoDialogAsync(SshProfile input = null) =>
+            _sshConnectionInfoDialogFactory().GetSshConnectionInfoAsync(input);
+
+        public Task<ShellProfile> ShowCustomCommandDialogAsync(ShellProfile input = null) =>
+            _customCommandDialogFactory().GetCustomCommandAsync(input);
+
+        public Task<SshProfile> ShowSshProfileSelectionDialogAsync()
+        {
+            var dialog = _sshProfileSelectionDialogFactory();
 
             return dialog.SelectProfile();
         }

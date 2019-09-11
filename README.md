@@ -1,14 +1,21 @@
-# Fluent Terminal
+<p align="center">
+  <img alt="fluentterminal logo" src="./FluentTerminal.App/Assets/AppIconsDark/Square44x44Logo.altform-unplated_targetsize-256_altform-lightunplated.png" width="100px" />
+  <h1 align="center">Fluent Terminal</h1>
+</p>
 
 [![Build status](https://fs-apps.visualstudio.com/FluentTerminal/_apis/build/status/FluentTerminal-Universal%20Windows%20Platform-CI)](https://fs-apps.visualstudio.com/FluentTerminal/_build/latest?definitionId=3)
 [![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=FluentTerminal&metric=alert_status)](https://sonarcloud.io/dashboard?id=FluentTerminal)
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FluentTerminal)
+[![Downloads](https://img.shields.io/github/downloads/felixse/FluentTerminal/total.svg?label=Downloads)](https://github.com/felixse/FluentTerminal/releases/)
+[![Release](https://img.shields.io/github/release/felixse/FluentTerminal.svg?label=Release)](https://github.com/felixse/FluentTerminal/releases)
+[![Contributors](https://img.shields.io/github/contributors/felixse/FluentTerminal?label=Contributors)](https://github.com/felixse/FluentTerminal/graphs/contributors)
 
 A Terminal Emulator based on UWP and web technologies.
 
 ## Features
 
 - Terminal for PowerShell, CMD, WSL or custom shells
+- Built-in support for SSH and [Mosh](https://mosh.org/) connections
 - Supports tabs and multiple windows
 - Theming and appearance configuration
 - Import/Export themes
@@ -24,10 +31,21 @@ A Terminal Emulator based on UWP and web technologies.
 ![Terminal window](Screenshots/terminal.jpg)
 ![Settings window](Screenshots/settings.jpg)
 
+## Laguages
+- English
+- German
+- Spanish
+- French
+- Simplified Chinese
+
+Sign up to [POEditor](https://poeditor.com/join/project/TfKNIt826z) to help with existing translations or add a new language
+
+
+
 ## Up Next
 
 - ~~Launch shell profile with a custom defined keybinding~~
-- Copy&Paste options
+- Copy & Paste options
 - Improved tabs
 - Split screen support
 
@@ -38,7 +56,6 @@ A Terminal Emulator based on UWP and web technologies.
 
 ### Chocolatey package manager installation
 
-- In **Settings**, click **For Developers**, and select **Developer mode**.
 - Install [Chocolatey](https://chocolatey.org/)
 - From an elevated/admin shell, execute `choco install fluent-terminal`
 

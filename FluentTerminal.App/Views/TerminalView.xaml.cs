@@ -8,7 +8,7 @@ namespace FluentTerminal.App.Views
 {
     public sealed partial class TerminalView : UserControl
     {
-        private readonly ITerminalView _terminalView;
+        private ITerminalView _terminalView;
 
         public TerminalView(TerminalViewModel viewModel)
         {
@@ -24,9 +24,28 @@ namespace FluentTerminal.App.Views
             _terminalView = new XtermTerminalView();
             TerminalContainer.Children.Add((UIElement)_terminalView);
             _terminalView.Initialize(ViewModel);
+            ViewModel.TerminalView = _terminalView;
+            ViewModel.Initialized = true;
         }
 
-        public TerminalViewModel ViewModel { get; }
+        public void DisposalPrepare()
+        {
+            Bindings.StopTracking();
+            TerminalContainer.Children.Remove((UIElement)_terminalView);
+            _terminalView = null;
+
+            ViewModel.SearchStarted -= OnSearchStarted;
+            ViewModel.Activated -= OnActivated;
+            ViewModel.ThemeChanged -= OnThemeChanged;
+            ViewModel.OptionsChanged -= OnOptionsChanged;
+            ViewModel.KeyBindingsChanged -= OnKeyBindingsChanged;
+            ViewModel.FindNextRequested -= OnFindNextRequested;
+            ViewModel.FindPreviousRequested -= OnFindPreviousRequested;
+
+            ViewModel = null;
+        }
+
+        public TerminalViewModel ViewModel { get; private set; }
 
         private async void OnActivated(object sender, EventArgs e)
         {

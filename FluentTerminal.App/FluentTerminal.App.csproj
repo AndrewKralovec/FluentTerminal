@@ -11,21 +11,23 @@
     <AssemblyName>FluentTerminal.App</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
-    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.16299.0</TargetPlatformVersion>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.17763.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.16299.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WindowsXamlEnableOverview>true</WindowsXamlEnableOverview>
-    <PackageCertificateKeyFile>FluentTerminal.App_TemporaryKey.pfx</PackageCertificateKeyFile>
-    <PackageCertificateThumbprint>F96F3E0E485F07E8E98DA6E5C06AA4B6F112B498</PackageCertificateThumbprint>
+    <PackageCertificateKeyFile>FluentTerminal.App_StoreKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateThumbprint>8A5DE5B20B663BD6A99B44C5BA278289521F419F</PackageCertificateThumbprint>
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <AppInstallerUpdateFrequency>1</AppInstallerUpdateFrequency>
+    <AppInstallerUpdateFrequency>0</AppInstallerUpdateFrequency>
     <AppInstallerCheckForUpdateFrequency>OnApplicationRun</AppInstallerCheckForUpdateFrequency>
     <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -117,7 +119,7 @@
     <Compile Include="CommandLineArguments\Target.cs" />
     <Compile Include="Converters\BackgroundToApplicationThemeConverter.cs" />
     <Compile Include="Converters\ColorResourceKeyFallbackConverter.cs" />
-    <Compile Include="Converters\EnumToDescriptionConverter.cs" />
+    <Compile Include="Converters\I18NConverter.cs" />
     <Compile Include="Converters\TabColorFallbackConverter.cs" />
     <Compile Include="Converters\EnumValueToVisibiltyConverter.cs" />
     <Compile Include="Converters\FalseToVisibleConverter.cs" />
@@ -127,16 +129,29 @@
     <Compile Include="Converters\StringToColorConverter.cs" />
     <Compile Include="Converters\TabThemeSelectedConverter.cs" />
     <Compile Include="Converters\TerminalViewModelToViewConverter.cs" />
+    <Compile Include="Converters\TextMiddleEllipsisConverter.cs" />
     <Compile Include="Converters\ToolTipValueToPixelConverter.cs" />
     <Compile Include="Converters\TrueToBoldConverter.cs" />
     <Compile Include="Converters\TrueToVisibleConverter.cs" />
     <Compile Include="Adapters\MessageDialogAdapter.cs" />
+    <Compile Include="Utilities\InteractiveSurface.cs" />
+    <Compile Include="ViewModels\CommandItemViewModel.cs" />
+    <Compile Include="Dialogs\CustomCommandDialog.xaml.cs">
+      <DependentUpon>CustomCommandDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialogs\InputDialog.xaml.cs">
       <DependentUpon>InputDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Dialogs\ShellProfileSelectionDialog.xaml.cs">
       <DependentUpon>ShellProfileSelectionDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Dialogs\SshInfoDialog.xaml.cs">
+      <DependentUpon>SshInfoDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\SshProfileSelectionDialog.xaml.cs">
+      <DependentUpon>SshProfileSelectionDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Services\ApplicationLanguageService.cs" />
     <Compile Include="Services\ClipboardService.cs" />
     <Compile Include="Services\FileSystemService.cs" />
     <Compile Include="Services\StartupTaskService.cs" />
@@ -144,6 +159,13 @@
     <Compile Include="Utilities\ColorExtensions.cs" />
     <Compile Include="Utilities\ContrastHelper.cs" />
     <Compile Include="Utilities\DebouncedAction.cs" />
+    <Compile Include="Utilities\JumpListHelper.cs" />
+    <Compile Include="ViewModels\CommandProfileProviderViewModel.cs" />
+    <Compile Include="ViewModels\DelayedHistorySaver.cs" />
+    <Compile Include="Views\BooleanTemplateSelector.cs" />
+    <Compile Include="Views\EnvironmentVariablesView.xaml.cs">
+      <DependentUpon>EnvironmentVariablesView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\KeyBindingsView.xaml.cs">
       <DependentUpon>KeyBindingsView.xaml</DependentUpon>
     </Compile>
@@ -154,6 +176,9 @@
     <Compile Include="Dialogs\CreateKeyBindingDialog.xaml.cs">
       <DependentUpon>CreateKeyBindingDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\OverlayView.xaml.cs">
+      <DependentUpon>OverlayView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
@@ -162,6 +187,9 @@
     </Compile>
     <Compile Include="Views\SettingsPages\MouseSettings.xaml.cs">
       <DependentUpon>MouseSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SettingsPages\SshProfileSettings.xaml.cs">
+      <DependentUpon>SshProfileSettings.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\SettingsPages\ThemeSettings.xaml.cs">
       <DependentUpon>ThemeSettings.xaml</DependentUpon>
@@ -182,6 +210,9 @@
       <DependentUpon>TabBar.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\TabBarBackgroundBindingHelper.cs" />
+    <Compile Include="Views\TemplateSelectors.xaml.cs">
+      <DependentUpon>TemplateSelectors.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\TerminalKeybindTemplateSelector.cs" />
     <Compile Include="Views\TabThemeTemplateSelector.cs" />
     <Compile Include="Views\TerminalColorPicker.xaml.cs">
@@ -189,7 +220,6 @@
     </Compile>
     <Compile Include="Views\NoValueTemplateSelector.cs" />
     <Compile Include="Views\TerminalThemeTemplateSelector.cs" />
-    <Compile Include="Views\ITerminalView.cs" />
     <Compile Include="Views\TerminalView.xaml.cs">
       <DependentUpon>TerminalView.xaml</DependentUpon>
     </Compile>
@@ -201,8 +231,55 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="Assets\AppIcons\LargeTile.scale-100_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\LargeTile.scale-125_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\LargeTile.scale-150_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\LargeTile.scale-200_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\LargeTile.scale-400_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SmallTile.scale-100_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SmallTile.scale-125_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SmallTile.scale-150_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SmallTile.scale-200_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SmallTile.scale-400_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SplashScreen.scale-100_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SplashScreen.scale-125_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SplashScreen.scale-150_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SplashScreen.scale-200_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\SplashScreen.scale-400_altform-lightunplated.png" />
     <Content Include="Assets\AppIcons\Square106x106Logo.black.png" />
+    <Content Include="Assets\AppIcons\Full-transparent.png" />
+    <Content Include="Assets\AppIcons\Square150x150Logo.scale-100_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square150x150Logo.scale-125_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square150x150Logo.scale-150_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square150x150Logo.scale-200_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square150x150Logo.scale-400_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.altform-unplated_targetsize-16_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.altform-unplated_targetsize-24_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.altform-unplated_targetsize-256_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.altform-unplated_targetsize-32_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.altform-unplated_targetsize-48_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.scale-100_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.scale-125_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.scale-150_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.scale-200_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.scale-400_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.targetsize-16_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.targetsize-24_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.targetsize-256_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.targetsize-32_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Square44x44Logo.targetsize-48_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\StoreLogo.scale-100_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\StoreLogo.scale-125_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\StoreLogo.scale-150_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\StoreLogo.scale-200_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\StoreLogo.scale-400_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Wide310x150Logo.scale-100_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Wide310x150Logo.scale-125_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Wide310x150Logo.scale-150_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Wide310x150Logo.scale-200_altform-lightunplated.png" />
+    <Content Include="Assets\AppIcons\Wide310x150Logo.scale-400_altform-lightunplated.png" />
     <Content Include="Assets\settingsicons.ttf" />
+    <None Include="Package.StoreAssociation.xml" />
     <Content Include="Win32\Autofac.dll" />
     <Content Include="Win32\FluentTerminal.App.Services.dll" />
     <Content Include="Win32\FluentTerminal.App.Services.pdb" />
@@ -211,6 +288,18 @@
     <Content Include="Win32\FluentTerminal.SystemTray.exe" />
     <Content Include="Win32\FluentTerminal.SystemTray.pdb" />
     <Content Include="Win32\GlobalHotKey.dll" />
+    <Content Include="MoshExecutables\x64\mosh-client.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="MoshExecutables\x64\mosh.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="MoshExecutables\x86\mosh-client.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="MoshExecutables\x86\mosh.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Win32\Newtonsoft.Json.dll" />
     <Content Include="Win32\PListNet.dll" />
     <Content Include="Win32\RestSharp.dll" />
@@ -234,12 +323,16 @@
     <Content Include="Win32\winpty.dll" />
     <Content Include="Win32\winpty.NET.dll" />
     <None Include="FluentTerminal.App_StoreKey.pfx" />
-    <None Include="FluentTerminal.App_TemporaryKey.pfx" />
     <Content Include="Client\bundle.js" />
     <Content Include="Client\index.html" />
     <Content Include="Client\style.css" />
     <Content Include="Client\xterm.css" />
     <Content Include="Win32\FluentTerminal.SystemTray.exe.config" />
+    <PRIResource Include="Strings\fr\Resources.resw" />
+    <PRIResource Include="Strings\es\Resources.resw" />
+    <PRIResource Include="Strings\de\Resources.resw" />
+    <PRIResource Include="Strings\zh-CN\Resources.resw" />
+    <PRIResource Include="Strings\en\Resources.resw" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\AppIcons\LargeTile.scale-100.png" />
@@ -287,7 +380,6 @@
     <Content Include="Assets\AppIcons\Wide310x150Logo.scale-150.png" />
     <Content Include="Assets\AppIcons\Wide310x150Logo.scale-200.png" />
     <Content Include="Assets\AppIcons\Wide310x150Logo.scale-400.png" />
-    <None Include="Package.StoreAssociation.xml" />
     <Content Include="Properties\Default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -295,11 +387,27 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="Dialogs\CustomCommandDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Dialogs\InputDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Dialogs\ShellProfileSelectionDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\SshInfoDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\SshProfileSelectionDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\EnvironmentVariablesView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -320,6 +428,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\OverlayView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\SettingsPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -329,6 +441,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\SettingsPages\MouseSettings.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\SettingsPages\SshProfileSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -364,6 +480,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\TemplateSelectors.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\XtermTerminalView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -371,34 +491,32 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Autofac">
-      <Version>4.9.1</Version>
+      <Version>4.9.4</Version>
     </PackageReference>
     <PackageReference Include="CommandLineParser">
-      <Version>2.4.3</Version>
+      <Version>2.6.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
-      <Version>6.2.8</Version>
+      <Version>6.2.9</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Toolkit.Uwp.UI">
-      <Version>5.1.0</Version>
+      <Version>5.1.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Controls">
-      <Version>5.1.0</Version>
+      <Version>5.1.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.UI.Xaml">
+      <Version>2.1.190606001</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Xaml.Behaviors.Uwp.Managed">
-      <Version>2.0.0</Version>
+      <Version>2.0.1</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
-      <Version>12.0.1</Version>
+      <Version>12.0.2</Version>
     </PackageReference>
     <PackageReference Include="Win2D.uwp">
       <Version>1.21.0</Version>
     </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <SDKReference Include="WindowsDesktop, Version=10.0.16299.0">
-      <Name>Windows Desktop Extensions for the UWP</Name>
-    </SDKReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FluentTerminal.App.Services\FluentTerminal.App.Services.csproj">
@@ -418,7 +536,11 @@
       <Name>FluentTerminal.RuntimeComponent</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <SDKReference Include="WindowsDesktop, Version=10.0.17763.0">
+      <Name>Windows Desktop Extensions for the UWP</Name>
+    </SDKReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

@@ -2,14 +2,10 @@
 using FluentTerminal.Models.Requests;
 using FluentTerminal.SystemTray.Native;
 using System;
-using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Windows.ApplicationModel;
 using static winpty.WinPty;
 
 namespace FluentTerminal.SystemTray.Services.WinPty
@@ -23,11 +19,14 @@ namespace FluentTerminal.SystemTray.Services.WinPty
         private TerminalsManager _terminalsManager;
         private Process _shellProcess;
         private bool _exited;
+        private bool _paused;
+        private TerminalSize _terminalSize;
 
         public void Start(CreateTerminalRequest request, TerminalsManager terminalsManager)
         {
             Id = request.Id;
             _terminalsManager = terminalsManager;
+            _terminalSize = request.Size;
 
             var configHandle = IntPtr.Zero;
             var spawnConfigHandle = IntPtr.Zero;
@@ -52,7 +51,7 @@ namespace FluentTerminal.SystemTray.Services.WinPty
                     args = $"\"{request.Profile.Location}\" {args}";
                 }
 
-                spawnConfigHandle = winpty_spawn_config_new(WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN, request.Profile.Location, args, cwd, terminalsManager.GetDefaultEnvironmentVariableString(), out errorHandle);
+                spawnConfigHandle = winpty_spawn_config_new(WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN, request.Profile.Location, args, cwd, terminalsManager.GetDefaultEnvironmentVariableString(request.Profile.EnvironmentVariables), out errorHandle);
                 if (errorHandle != IntPtr.Zero)
                 {
                     throw new Exception(winpty_error_msg(errorHandle));
@@ -63,7 +62,7 @@ namespace FluentTerminal.SystemTray.Services.WinPty
 
                 if (!winpty_spawn(_handle, spawnConfigHandle, out IntPtr process, out IntPtr thread, out int procError, out errorHandle))
                 {
-                    throw new Exception($@"Failed to start the shell process. Please check your shell settings.\nTried to start: {request.Profile.Location} ""{request.Profile.Arguments}""");
+                    throw new Exception($@"Failed to start the shell process. Please check your shell settings.{Environment.NewLine}Tried to start: {request.Profile.Location} ""{request.Profile.Arguments}""");
                 }
 
                 var shellProcessId = ProcessApi.GetProcessId(process);
@@ -101,8 +100,6 @@ namespace FluentTerminal.SystemTray.Services.WinPty
             Dispose(false);
         }
 
-        
-
         private string GetWorkingDirectory(ShellProfile configuration)
         {
             if (string.IsNullOrWhiteSpace(configuration.WorkingDirectory) || !Directory.Exists(configuration.WorkingDirectory))
@@ -112,9 +109,9 @@ namespace FluentTerminal.SystemTray.Services.WinPty
             return configuration.WorkingDirectory;
         }
 
-        public event EventHandler ConnectionClosed;
+        public event EventHandler<int> ConnectionClosed;
 
-        public int Id { get; private set; }
+        public byte Id { get; private set; }
 
         public string ShellExecutableName { get; private set; }
 
@@ -127,7 +124,12 @@ namespace FluentTerminal.SystemTray.Services.WinPty
 
         public void Close()
         {
-            ConnectionClosed?.Invoke(this, EventArgs.Empty);
+            int exitCode = -1;
+            if (_shellProcess != null && _shellProcess.HasExited)
+            {
+                exitCode = _shellProcess.ExitCode;
+            }
+            ConnectionClosed?.Invoke(this, exitCode);
         }
 
         public void Write(byte[] data)
@@ -145,6 +147,7 @@ namespace FluentTerminal.SystemTray.Services.WinPty
                 {
                     throw new Exception(winpty_error_msg(errorHandle));
                 }
+                _terminalSize = size;
             }
             finally
             {
@@ -198,7 +201,7 @@ namespace FluentTerminal.SystemTray.Services.WinPty
                 {
                     do
                     {
-                        var buffer = new byte[1024];
+                        var buffer = new byte[Math.Max(1024, _terminalSize.Columns * _terminalSize.Rows * 4)];
                         var readBytes = await _stdout.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                         var read = new byte[readBytes];
                         Buffer.BlockCopy(buffer, 0, read, 0, readBytes);
@@ -207,10 +210,20 @@ namespace FluentTerminal.SystemTray.Services.WinPty
                         {
                             _terminalsManager.DisplayTerminalOutput(Id, read);
                         }
+
+                        while (_paused && !_exited)
+                        {
+                            await Task.Delay(50);
+                        }
                     }
                     while (!_exited);
                 }
             }, TaskCreationOptions.LongRunning);
+        }
+
+        public void Pause(bool value)
+        {
+            _paused = value;
         }
     }
 }

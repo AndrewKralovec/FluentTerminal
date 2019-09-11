@@ -1,6 +1,7 @@
 ﻿namespace FluentTerminal.Models.Requests
 {
-    public class GetAvailablePortRequest
+    public class GetAvailablePortRequest : IMessage
     {
+        public byte Identifier => (byte) MessageIdentifiers.GetAvailablePortRequest;
     }
 }

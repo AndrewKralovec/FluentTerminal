@@ -8,22 +8,42 @@ namespace FluentTerminal.App.Services
 {
     public interface ITrayProcessCommunicationService
     {
-        event EventHandler<int> TerminalExited;
+        event EventHandler<TerminalExitStatus> TerminalExited;
 
         void Initialize(IAppServiceConnection appServiceConnection);
 
-        Task<CreateTerminalResponse> CreateTerminal(int id, TerminalSize size, ShellProfile shellProfile, SessionType sessionType);
+        Task<CreateTerminalResponse> CreateTerminal(byte id, TerminalSize size, ShellProfile shellProfile, SessionType sessionType);
 
-        Task ResizeTerminal(int id, TerminalSize size);
+        Task<PauseTerminalOutputResponse> PauseTerminalOutput(byte id, bool pause);
+
+        Task ResizeTerminal(byte id, TerminalSize size);
 
         Task UpdateToggleWindowKeyBindings();
 
-        Task Write(int terminalId, byte[] data);
+        Task Write(byte terminalId, byte[] data);
 
-        void SubscribeForTerminalOutput(int terminalId, Action<byte[]> callback);
+        void SubscribeForTerminalOutput(byte terminalId, Action<byte[]> callback);
 
-        Task CloseTerminal(int terminalId);
+        void UnsubscribeFromTerminalOutput(byte terminalId);
+
+        Task CloseTerminal(byte terminalId);
         Task<GetAvailablePortResponse> GetAvailablePort();
-        int GetNextTerminalId();
+        byte GetNextTerminalId();
+
+        Task<string> GetUserName();
+
+        Task SaveTextFileAsync(string path, string content);
+
+        Task<string> GetSshConfigDirAsync();
+
+        Task<string[]> GetFilesFromSshConfigDirAsync();
+
+        Task<bool> CheckFileExistsAsync(string path);
+
+        void MuteTerminal(bool mute);
+
+        void UpdateSettings(ApplicationSettings settings);
+
+        Task<string> GetCommandPathAsync(string command);
     }
 }

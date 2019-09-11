@@ -31,6 +31,7 @@ namespace FluentTerminal.App.Adapters
 
         private void _applicationView_Consolidated(ApplicationView sender, ApplicationViewConsolidatedEventArgs args)
         {
+            _applicationView.Consolidated -= _applicationView_Consolidated;
             Closed?.Invoke(this, EventArgs.Empty);
         }
 
@@ -47,8 +48,15 @@ namespace FluentTerminal.App.Adapters
             return ApiInformation.IsApiContractPresent(api, version);
         }
 
-        public Task RunOnDispatcherThread(Action action)
+        public Task RunOnDispatcherThread(Action action, bool enforceNewSchedule = true)
         {
+            if (!enforceNewSchedule && _dispatcher.HasThreadAccess)
+            {
+                action();
+
+                return Task.CompletedTask;
+            }
+
             return _dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => action()).AsTask();
         }
 

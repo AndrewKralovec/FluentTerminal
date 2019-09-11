@@ -9,7 +9,7 @@ namespace FluentTerminal.App.Utilities
         private DispatcherTimer timer;
         private readonly CoreDispatcher _dispatcher;
         private readonly TimeSpan _interval;
-        private readonly Action<T> _action;
+        private Action<T> _action;
         private T _parameter;
 
         public DebouncedAction(CoreDispatcher dispatcher, TimeSpan interval, Action<T> action)
@@ -23,27 +23,42 @@ namespace FluentTerminal.App.Utilities
         {
             _parameter = parameter;
 
-            timer?.Stop();
-            timer = null;
+            ResetTimer();
 
             timer = new DispatcherTimer
             {
                 Interval = _interval
             };
-            timer.Tick += (s, e) =>
+            timer.Tick += async (s, e) =>
             {
-                if (timer == null)
+                if (!ResetTimer())
                 {
                     return;
                 }
 
-                timer?.Stop();
-                timer = null;
-
-                _dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => _action.Invoke(_parameter));
+                await _dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    _action.Invoke(_parameter);
+                });
             };
-
             timer.Start();
+        }
+
+        public void Stop()
+        {
+            ResetTimer();
+            _action = null;
+        }
+
+        private bool ResetTimer()
+        {
+            if (timer == null)
+            {
+                return false;
+            }
+            timer.Stop();
+            timer = null;
+            return true;
         }
     }
 }

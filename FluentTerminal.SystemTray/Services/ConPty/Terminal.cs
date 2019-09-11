@@ -1,12 +1,12 @@
-﻿using FluentTerminal.SystemTray.Services.ConPty.Processes;
-using Microsoft.Win32.SafeHandles;
+﻿using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using static FluentTerminal.SystemTray.Services.ConPty.Native.ConsoleApi;
+using FluentTerminal.SystemTray.Services.ConPty.Processes;
 using static FluentTerminal.SystemTray.Native.WindowApi;
+using static FluentTerminal.SystemTray.Services.ConPty.Native.ConsoleApi;
 
 namespace FluentTerminal.SystemTray.Services.ConPty
 {
@@ -20,6 +20,7 @@ namespace FluentTerminal.SystemTray.Services.ConPty
         private PseudoConsolePipe _inputPipe;
         private PseudoConsolePipe _outputPipe;
         private PseudoConsole _pseudoConsole;
+        private Process _process;
 
         /// <summary>
         /// A stream of VT-100-enabled output from the console.
@@ -31,6 +32,11 @@ namespace FluentTerminal.SystemTray.Services.ConPty
         /// </summary>
         public event EventHandler OutputReady;
         public event EventHandler Exited;
+
+        /// <summary>
+        /// The exit code of the terminal's process. -1 if the process hasn't exited yet.
+        /// </summary>
+        public int ExitCode { get; private set; } = -1;
 
         public Terminal()
         {
@@ -51,6 +57,11 @@ namespace FluentTerminal.SystemTray.Services.ConPty
 
             // And enable VT processing for our process's console.
             EnableVirtualTerminalSequenceProcessing();
+        }
+
+        ~Terminal()
+        {
+            Dispose(false);
         }
 
         private void EnableVirtualTerminalSequenceProcessing()
@@ -81,21 +92,19 @@ namespace FluentTerminal.SystemTray.Services.ConPty
             _outputPipe = new PseudoConsolePipe();
             _pseudoConsole = PseudoConsole.Create(_inputPipe.ReadSide, _outputPipe.WriteSide, consoleWidth, consoleHeight);
 
-            using (var process = ProcessFactory.Start(command, directory, environment, PseudoConsole.PseudoConsoleThreadAttribute, _pseudoConsole.Handle))
-            {
-                // copy all pseudoconsole output to a FileStream and expose it to the rest of the app
-                ConsoleOutStream = new FileStream(_outputPipe.ReadSide, FileAccess.Read);
-                OutputReady.Invoke(this, EventArgs.Empty);
+            _process = ProcessFactory.Start(command, directory, environment, PseudoConsole.PseudoConsoleThreadAttribute, _pseudoConsole.Handle);
 
-                // Store input pipe handle, and a writer for later reuse
-                _consoleInputPipeWriteHandle = _inputPipe.WriteSide;
-                _consoleInputWriter = new FileStream(_consoleInputPipeWriteHandle, FileAccess.Write);
+            // copy all pseudoconsole output to a FileStream and expose it to the rest of the app
+            ConsoleOutStream = new FileStream(_outputPipe.ReadSide, FileAccess.Read);
+            OutputReady.Invoke(this, EventArgs.Empty);
 
-                // free resources in case the console is ungracefully closed (e.g. by the 'x' in the window titlebar)
-                OnClose(() => DisposeResources(process, _pseudoConsole, _outputPipe, _inputPipe, _consoleInputWriter));
+            // Store input pipe handle, and a writer for later reuse
+            _consoleInputPipeWriteHandle = _inputPipe.WriteSide;
+            _consoleInputWriter = new FileStream(_consoleInputPipeWriteHandle, FileAccess.Write);
 
-                WaitForExit(process).WaitOne(Timeout.Infinite);
-            }
+            WaitForExit(_process).WaitOne(Timeout.Infinite);
+            this.ExitCode = (int)_process.GetExitCode();
+
             Exited?.Invoke(this, EventArgs.Empty);
         }
 
@@ -109,8 +118,8 @@ namespace FluentTerminal.SystemTray.Services.ConPty
         /// </summary>
         public void WriteToPseudoConsole(byte[] data)
         {
-            _consoleInputWriter.Write(data, 0, data.Length);
-            _consoleInputWriter.Flush();
+            _consoleInputWriter?.Write(data, 0, data.Length);
+            _consoleInputWriter?.Flush();
         }
 
         /// <summary>
@@ -121,30 +130,6 @@ namespace FluentTerminal.SystemTray.Services.ConPty
             {
                 SafeWaitHandle = new SafeWaitHandle(process.ProcessInfo.hProcess, ownsHandle: false)
             };
-
-        /// <summary>
-        /// Set a callback for when the terminal is closed (e.g. via the "X" window decoration button).
-        /// Intended for resource cleanup logic.
-        /// </summary>
-        private static void OnClose(Action handler)
-        {
-            SetConsoleCtrlHandler(eventType =>
-            {
-                if (eventType == CtrlTypes.CTRL_CLOSE_EVENT)
-                {
-                    handler();
-                }
-                return false;
-            }, true);
-        }
-
-        private void DisposeResources(params IDisposable[] disposables)
-        {
-            foreach (var disposable in disposables)
-            {
-                disposable.Dispose();
-            }
-        }
 
         /// <summary>
         /// A helper method that opens a handle on the console's screen buffer, which will allow us to get its output,
@@ -172,27 +157,34 @@ namespace FluentTerminal.SystemTray.Services.ConPty
         }
 
         #region IDisposable Support
-        private bool disposedValue = false;
-
-        private void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _inputPipe?.Dispose();
-                    _outputPipe?.Dispose();
-                    _pseudoConsole?.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
 
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(true);
         }
+
+        private bool alreadyDisposed = false;
+
+        public void Dispose(bool disposeManaged)
+        {
+            if (alreadyDisposed)
+            {
+                return;
+            }
+
+            if (disposeManaged)
+            {
+                _consoleInputWriter?.Dispose();
+                _process?.Dispose();
+                _pseudoConsole?.Dispose();
+                _outputPipe?.Dispose();
+                _inputPipe?.Dispose();
+            }
+
+            alreadyDisposed = true;
+        }
+
         #endregion
     }
 }

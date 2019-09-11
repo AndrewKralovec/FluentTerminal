@@ -6,14 +6,15 @@ namespace FluentTerminal.SystemTray.Services
 {
     public interface ITerminalSession : IDisposable
     {
-        int Id { get; }
+        byte Id { get; }
         string ShellExecutableName { get; }
 
-        event EventHandler ConnectionClosed;
+        event EventHandler<int> ConnectionClosed;
 
         void Close();
         void Resize(TerminalSize size);
         void Write(byte[] data);
         void Start(CreateTerminalRequest request, TerminalsManager terminalsManager);
+        void Pause(bool value);
     }
 }

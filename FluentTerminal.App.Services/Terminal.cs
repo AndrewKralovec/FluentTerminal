@@ -2,6 +2,7 @@
 using FluentTerminal.Models.Enums;
 using FluentTerminal.Models.Responses;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace FluentTerminal.App.Services
@@ -10,21 +11,37 @@ namespace FluentTerminal.App.Services
     {
         private readonly ITrayProcessCommunicationService _trayProcessCommunicationService;
         private Func<Task<string>> _selectedTextCallback;
+        private bool _closingFromUI;
+        private bool _exited;
+        private readonly bool _requireShellProcessStart;
 
-        public Terminal(ITrayProcessCommunicationService trayProcessCommunicationService)
+        public Terminal(ITrayProcessCommunicationService trayProcessCommunicationService, byte? terminalId = null)
         {
             _trayProcessCommunicationService = trayProcessCommunicationService;
             _trayProcessCommunicationService.TerminalExited += OnTerminalExited;
-            Id = _trayProcessCommunicationService.GetNextTerminalId();
+            Id = terminalId ?? trayProcessCommunicationService.GetNextTerminalId();
+            _requireShellProcessStart = !terminalId.HasValue;
         }
 
-        private void OnTerminalExited(object sender, int e)
+        private void OnTerminalExited(object sender, TerminalExitStatus status)
         {
-            if (e == Id)
+            if (status.TerminalId != Id)
+            {
+                return;
+            }
+
+            _exited = true;
+            Exited?.Invoke(this, status.ExitCode);
+
+            if (_closingFromUI || status.ExitCode <= 0)
             {
                 Closed?.Invoke(this, System.EventArgs.Empty);
             }
+
+            _trayProcessCommunicationService.TerminalExited -= OnTerminalExited;
         }
+
+        public event EventHandler<int> Exited;
 
         /// <summary>
         /// To be observed by both view and viewmodel
@@ -53,13 +70,20 @@ namespace FluentTerminal.App.Services
 
         public string FallbackTitle { get; private set; }
 
-        public int Id { get; }
+        public byte Id { get; }
 
         /// <summary>
         /// To be called by either view or viewmodel
         /// </summary>
         public async Task Close()
         {
+            if (_exited)
+            {
+                Closed?.Invoke(this, System.EventArgs.Empty);
+                return;
+            }
+            _closingFromUI = true;
+            _trayProcessCommunicationService.UnsubscribeFromTerminalOutput(Id);
             await _trayProcessCommunicationService.CloseTerminal(Id).ConfigureAwait(true);
         }
 
@@ -69,7 +93,7 @@ namespace FluentTerminal.App.Services
         /// <returns></returns>
         public Task<string> GetSelectedText()
         {
-            return _selectedTextCallback();
+            return _selectedTextCallback?.Invoke();
         }
 
         /// <summary>
@@ -115,17 +139,30 @@ namespace FluentTerminal.App.Services
         /// <param name="shellProfile"></param>
         /// <param name="size"></param>
         /// <param name="sessionType"></param>
-        public async Task<CreateTerminalResponse> StartShellProcess(ShellProfile shellProfile, TerminalSize size, SessionType sessionType)
+        public async Task<TerminalResponse> StartShellProcess(ShellProfile shellProfile, TerminalSize size, SessionType sessionType, string termState)
         {
-            _trayProcessCommunicationService.SubscribeForTerminalOutput(Id, t => OutputReceived?.Invoke(this, t));
-            var response = await _trayProcessCommunicationService.CreateTerminal(Id, size, shellProfile, sessionType).ConfigureAwait(true);
-
-            if (response.Success)
+            if (!_requireShellProcessStart && !string.IsNullOrEmpty(termState))
             {
-                FallbackTitle = response.ShellExecutableName;
-                SetTitle(FallbackTitle);
+                OutputReceived?.Invoke(this, Encoding.UTF8.GetBytes(termState));
             }
-            return response;
+
+            _trayProcessCommunicationService.SubscribeForTerminalOutput(Id, t => OutputReceived?.Invoke(this, t));
+
+            if (_requireShellProcessStart)
+            {
+                var response = await _trayProcessCommunicationService.CreateTerminal(Id, size, shellProfile, sessionType).ConfigureAwait(true);
+
+                if (response.Success)
+                {
+                    FallbackTitle = response.ShellExecutableName;
+                    SetTitle(FallbackTitle);
+                }
+                return response;
+            }
+            else
+            {
+                return await _trayProcessCommunicationService.PauseTerminalOutput(Id, false);
+            }
         }
 
         public Task Write(byte[] data)

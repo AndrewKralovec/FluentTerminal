@@ -1,7 +1,10 @@
-﻿using FluentTerminal.Models;
+﻿using FluentTerminal.App.Services.Utilities;
+using FluentTerminal.Models;
 using FluentTerminal.Models.Enums;
 using System;
 using System.Collections.Generic;
+using Windows.Foundation.Metadata;
+using Windows.Storage;
 
 namespace FluentTerminal.App.Services.Implementation
 {
@@ -9,6 +12,14 @@ namespace FluentTerminal.App.Services.Implementation
     {
         public ApplicationSettings GetDefaultApplicationSettings()
         {
+            var logDirectoryPath = string.Empty;
+            try
+            {
+                // Accessing ApplicationData.Current during run of unit tests causes
+                // "System.InvalidOperationException : The process has no package identity" exception.
+                logDirectoryPath = ApplicationData.Current.LocalCacheFolder.Path;
+            } catch (InvalidOperationException) { }
+
             return new ApplicationSettings
             {
                 ConfirmClosingTabs = false,
@@ -20,11 +31,16 @@ namespace FluentTerminal.App.Services.Implementation
                 CopyOnSelect = false,
                 MouseMiddleClickAction = MouseAction.None,
                 MouseRightClickAction = MouseAction.ContextMenu,
-                AlwaysShowTabs = false,
-                AlwaysUseWinPty = true,
                 ShowNewOutputIndicator = false,
                 EnableTrayIcon = true,
-                ShowCustomTitleInTitlebar = true
+                ShowCustomTitleInTitlebar = true,
+                UseMoshByDefault = true,
+                AutoFallbackToWindowsUsernameInLinks = true,
+                RTrimCopiedLines = true,
+                MuteTerminalBeeps = true,
+                EnableLogging = false,
+                PrintableOutputOnly = true,
+                LogDirectoryPath = logDirectoryPath
             };
         }
 
@@ -38,9 +54,6 @@ namespace FluentTerminal.App.Services.Implementation
                     new KeyBinding
                     {
                         Command = nameof(Command.ToggleWindow),
-                        Ctrl = false,
-                        Alt = false,
-                        Shift = false,
                         Key = (int)ExtendedVirtualKey.Scroll
                     }
                 };
@@ -52,8 +65,6 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.NextTab),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
                         Key = (int)ExtendedVirtualKey.Tab
                     }
                 };
@@ -65,7 +76,6 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.PreviousTab),
                         Ctrl = true,
-                        Alt = false,
                         Shift = true,
                         Key = (int)ExtendedVirtualKey.Tab
                     }
@@ -85,10 +95,20 @@ namespace FluentTerminal.App.Services.Implementation
                     new KeyBinding
                     {
                         Command = command.ToString(),
-                        Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Alt = true,
                         Key = (int)ExtendedVirtualKey.Number1 + (command - Command.SwitchToTerm1)
+                    }
+                };
+
+                case Command.DuplicateTab:
+                    return new List<KeyBinding>
+                {
+                    new KeyBinding
+                    {
+                        Command = nameof(Command.DuplicateTab),
+                        Ctrl = true,
+                        Shift = true,
+                        Key = (int)ExtendedVirtualKey.D
                     }
                 };
 
@@ -99,8 +119,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.NewTab),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.T
                     }
                 };
@@ -112,11 +131,83 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.ConfigurableNewTab),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = true,
+                        Alt = true,
                         Key = (int)ExtendedVirtualKey.T
                     }
                 };
+
+                case Command.NewSshTab:
+                    return new List<KeyBinding>
+                    {
+                        new KeyBinding
+                        {
+                            Command = nameof(Command.NewSshTab),
+                            Ctrl = true,
+                            Shift = true,
+                            Key = (int)ExtendedVirtualKey.Y
+                        }
+                    };
+
+                case Command.NewSshWindow:
+                    return new List<KeyBinding>
+                    {
+                        new KeyBinding
+                        {
+                            Command = nameof(Command.NewSshWindow),
+                            Ctrl = true,
+                            Alt = true,
+                            Key = (int)ExtendedVirtualKey.Y
+                        }
+                    };
+
+                case Command.NewCustomCommandTab:
+                    return new List<KeyBinding>
+                    {
+                        new KeyBinding
+                        {
+                            Command = nameof(Command.NewCustomCommandTab),
+                            Ctrl = true,
+                            Shift = true,
+                            Key = (int)ExtendedVirtualKey.Q
+                        }
+                    };
+
+                case Command.NewCustomCommandWindow:
+                    return new List<KeyBinding>
+                    {
+                        new KeyBinding
+                        {
+                            Command = nameof(Command.NewCustomCommandWindow),
+                            Ctrl = true,
+                            Alt = true,
+                            Key = (int)ExtendedVirtualKey.Q
+                        }
+                    };
+
+                case Command.SavedSshNewTab:
+                    return new List<KeyBinding>
+                    {
+                        new KeyBinding
+                        {
+                            Command = nameof(Command.SavedSshNewTab),
+                            Ctrl = true,
+                            Shift = true,
+                            Key = (int)ExtendedVirtualKey.U
+                        }
+                    };
+
+                case Command.SavedSshNewWindow:
+                    return new List<KeyBinding>
+                    {
+                        new KeyBinding
+                        {
+                            Command = nameof(Command.SavedSshNewWindow),
+                            Ctrl = true,
+                            Alt = true,
+                            Key = (int)ExtendedVirtualKey.U
+                        }
+                    };
+
 
                 case Command.ChangeTabTitle:
                     return new List<KeyBinding>
@@ -125,7 +216,6 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.ChangeTabTitle),
                         Ctrl = true,
-                        Alt = false,
                         Shift = true,
                         Key = (int)ExtendedVirtualKey.R
                     }
@@ -138,8 +228,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.CloseTab),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.W
                     }
                 };
@@ -151,8 +240,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.NewWindow),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.N
                     }
                 };
@@ -164,8 +252,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.ConfigurableNewWindow),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = true,
+                        Alt = true,
                         Key = (int)ExtendedVirtualKey.N
                     }
                 };
@@ -177,8 +264,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.ShowSettings),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.Comma
                     }
                 };
@@ -190,8 +276,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.Copy),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.C
                     }
                 };
@@ -203,8 +288,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.Paste),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.V
                     }
                 };
@@ -217,8 +301,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.PasteWithoutNewlines),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = true,
+                        Alt = true,
                         Key = (int)ExtendedVirtualKey.V
                     }
                 };
@@ -230,8 +313,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.Search),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.F
                     }
                 };
@@ -242,10 +324,13 @@ namespace FluentTerminal.App.Services.Implementation
                     new KeyBinding
                     {
                         Command = nameof(Command.ToggleFullScreen),
-                        Ctrl = false,
                         Alt = true,
-                        Shift = false,
                         Key = (int)ExtendedVirtualKey.Enter
+                    },
+                    new KeyBinding
+                    {
+                        Command = nameof(Command.ToggleFullScreen),
+                        Key = (int)ExtendedVirtualKey.F11
                     }
                 };
 
@@ -256,8 +341,7 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.SelectAll),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Shift = true,
                         Key = (int)ExtendedVirtualKey.A
                     }
                 };
@@ -269,14 +353,14 @@ namespace FluentTerminal.App.Services.Implementation
                     {
                         Command = nameof(Command.Clear),
                         Ctrl = true,
-                        Alt = false,
-                        Shift = false,
+                        Alt = true,
                         Key = (int)ExtendedVirtualKey.L
                     }
                 };
-            }
 
-            return null;
+                default:
+                    throw new InvalidOperationException($"Default keybindings for Command '{command}' are missing");
+            }
         }
 
         public Guid GetDefaultShellProfileId()
@@ -291,7 +375,7 @@ namespace FluentTerminal.App.Services.Implementation
                 new TabTheme
                 {
                     Id = 0,
-                    Name = "None",
+                    Name = I18N.Translate("TabTheme.None"),
                     BackgroundOpacity = double.NaN,
                     BackgroundPointerOverOpacity = double.NaN,
                     BackgroundPressedOpacity = double.NaN,
@@ -302,41 +386,42 @@ namespace FluentTerminal.App.Services.Implementation
                 new TabTheme
                 {
                     Id = 1,
-                    Name = "Red",
+                    Name = I18N.Translate("TabTheme.Red"),
                     Color = "#E81123"
                 },
                 new TabTheme
                 {
                     Id = 2,
-                    Name = "Green",
+                    Name = I18N.Translate("TabTheme.Green"),
                     Color = "#10893E"
                 },
                 new TabTheme
                 {
                     Id = 3,
-                    Name = "Blue",
+                    Name = I18N.Translate("TabTheme.Blue"),
                     Color = "#0078D7"
                 },
                 new TabTheme
                 {
                     Id = 4,
-                    Name = "Purple",
+                    Name = I18N.Translate("TabTheme.Purple"),
                     Color = "#881798"
                 },
                 new TabTheme
                 {
                     Id = 5,
-                    Name = "Orange",
+                    Name = I18N.Translate("TabTheme.Orange"),
                     Color = "#FF8C00"
                 },
                 new TabTheme
                 {
                     Id = 6,
-                    Name = "Teal",
+                    Name = I18N.Translate("TabTheme.Teal"),
                     Color = "#00B7C3"
                 }
             };
         }
+
         public TerminalOptions GetDefaultTerminalOptions()
         {
             return new TerminalOptions
@@ -350,7 +435,8 @@ namespace FluentTerminal.App.Services.Implementation
                 BoldText = false,
                 BackgroundOpacity = 0.8,
                 Padding = 12,
-                ScrollBackLimit = 1000
+                ScrollBackLimit = 1000,
+                WordSeparator = " ()[]{}:;|│!&*<>@&quot;&squo;"
             };
         }
 
@@ -367,11 +453,17 @@ namespace FluentTerminal.App.Services.Implementation
                 {
                     Id = GetDefaultShellProfileId(),
                     Name = "Powershell",
+                    MigrationVersion = ShellProfile.CurrentMigrationVersion,
                     Arguments = string.Empty,
                     Location = @"C:\windows\system32\WindowsPowerShell\v1.0\powershell.exe",
                     PreInstalled = true,
                     WorkingDirectory = string.Empty,
                     LineEndingTranslation = LineEndingStyle.DoNotModify,
+                    UseConPty = ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 8), // Windows 10 1903+
+                    EnvironmentVariables = new Dictionary<string, string>
+                    {
+                        ["TERM"] = "xterm-256color"
+                    },
                     KeyBindings = new []
                     {
                         new KeyBinding
@@ -389,11 +481,17 @@ namespace FluentTerminal.App.Services.Implementation
                 {
                     Id = Guid.Parse("ab942a61-7673-4755-9bd8-765aff91d9a3"),
                     Name = "CMD",
+                    MigrationVersion = ShellProfile.CurrentMigrationVersion,
                     Arguments = string.Empty,
                     Location = @"C:\Windows\System32\cmd.exe",
                     PreInstalled = true,
                     WorkingDirectory = string.Empty,
                     LineEndingTranslation = LineEndingStyle.DoNotModify,
+                    UseConPty = ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 7), // Windows 10 1809+
+                    EnvironmentVariables = new Dictionary<string, string>
+                    {
+                        ["TERM"] = "xterm-256color"
+                    },
                     KeyBindings = new []
                     {
                         new KeyBinding
@@ -411,11 +509,17 @@ namespace FluentTerminal.App.Services.Implementation
                 {
                     Id= Guid.Parse("e5785ad6-584f-40cb-bdcd-d5b3b3953e7f"),
                     Name = "WSL",
+                    MigrationVersion = ShellProfile.CurrentMigrationVersion,
                     Arguments = string.Empty,
                     Location = @"C:\windows\system32\wsl.exe",
                     PreInstalled = true,
                     WorkingDirectory = string.Empty,
-                    LineEndingTranslation = LineEndingStyle.DoNotModify,
+                    LineEndingTranslation = LineEndingStyle.ToLF,
+                    UseConPty = ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 7), // Windows 10 1809+
+                    EnvironmentVariables = new Dictionary<string, string>
+                    {
+                        ["TERM"] = "xterm-256color"
+                    },
                     KeyBindings = new []
                     {
                         new KeyBinding
@@ -578,18 +682,18 @@ namespace FluentTerminal.App.Services.Implementation
                     Black = "#300A24",
                     Red = "#CC0000",
                     Green = "#4E9A06",
-                    Yellow = "#06989A",
+                    Yellow = "#C4A000",
                     Blue = "#3465A4",
                     Magenta = "#75507B",
-                    Cyan = "#C4A000",
+                    Cyan = "#06989A",
                     White = "#D3D7CF",
                     BrightBlack = "#554E53",
                     BrightRed = "#EF2929",
                     BrightGreen = "#8AE234",
-                    BrightYellow = "#34E2E2",
+                    BrightYellow = "#FCE94F",
                     BrightBlue = "#729FCF",
                     BrightMagenta = "#AD7FA8",
-                    BrightCyan = "#FCE94F",
+                    BrightCyan = "#34E2E2",
                     BrightWhite = "#EEEEEE"
                 }
             };

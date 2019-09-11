@@ -1,4 +1,5 @@
-﻿using FluentTerminal.App.Utilities;
+﻿using FluentTerminal.App.Services.Utilities;
+using FluentTerminal.App.Utilities;
 using FluentTerminal.App.ViewModels;
 using FluentTerminal.App.Views.SettingsPages;
 using System;
@@ -12,6 +13,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
+using MUXC = Microsoft.UI.Xaml.Controls;
 
 namespace FluentTerminal.App.Views
 {
@@ -27,8 +29,7 @@ namespace FluentTerminal.App.Views
         {
             InitializeComponent();
             Root.DataContext = this;
-
-            ApplicationView.GetForCurrentView().Title = "Settings";
+            ApplicationView.GetForCurrentView().Title = I18N.Translate("Setting");
 
             CoreApplicationViewTitleBar coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.LayoutMetricsChanged += TitleBar_LayoutMetricsChanged;
@@ -48,7 +49,7 @@ namespace FluentTerminal.App.Views
 
         private void OnColorValuesChanged(UISettings sender, object args)
         {
-            if (_onThemesPage == false)
+            if (!_onThemesPage)
             {
                 SetTitleBarColors();
             }
@@ -80,26 +81,22 @@ namespace FluentTerminal.App.Views
         {
             _dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
-                ContentFrame.Navigate(typeof(About), ViewModel.About);
-
                 // Deselect item in NavigationView (https://stackoverflow.com/a/49082640/4132379)
-                NavigationView.MenuItems.Add(hiddenNavigationItem);
-                NavigationView.SelectedItem = hiddenNavigationItem;
-                NavigationView.SelectedItem = null;
-                NavigationView.MenuItems.Remove(hiddenNavigationItem);
+                NavigationView.SelectedItem = Setting_Hidden;
+                ContentFrame.Navigate(typeof(About), ViewModel.About);
             });
         }
 
         private void NavigationView_Loaded(object sender, RoutedEventArgs e)
         {
-            NavigationView.SelectedItem = NavigationView.MenuItems.Cast<NavigationViewItemBase>().FirstOrDefault(m => m.Tag.ToString() == "general");
+            NavigationView.SelectedItem = NavigationView.MenuItems.Cast<MUXC.NavigationViewItemBase>().FirstOrDefault(m => m.Tag.ToString() == "general");
         }
 
-        private void NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        private void NavigationView_SelectionChanged(MUXC.NavigationView sender, MUXC.NavigationViewSelectionChangedEventArgs args)
         {
             _onThemesPage = false;
 
-            if (args.SelectedItem is NavigationViewItem item)
+            if (args.SelectedItem is MUXC.NavigationViewItem item)
             {
                 switch (item.Tag)
                 {
@@ -108,7 +105,7 @@ namespace FluentTerminal.App.Views
                         break;
 
                     case "profiles":
-                        ContentFrame.Navigate(typeof(ShellProfileSettings), ViewModel.Shell);
+                        ContentFrame.Navigate(typeof(ShellProfileSettings), ViewModel.Profiles);
                         break;
 
                     case "themes":
@@ -126,6 +123,10 @@ namespace FluentTerminal.App.Views
 
                     case "mouse":
                         ContentFrame.Navigate(typeof(MouseSettings), ViewModel.Mouse);
+                        break;
+
+                    case "sshprofiles":
+                        ContentFrame.Navigate(typeof(SshProfileSettings), ViewModel.SshProfiles);
                         break;
                 }
             }

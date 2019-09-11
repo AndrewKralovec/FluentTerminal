@@ -1,7 +1,10 @@
-﻿namespace FluentTerminal.App.Services.EventArgs
+﻿using System;
+
+namespace FluentTerminal.App.Services.EventArgs
 {
     public class NewWindowRequestedEventArgs : System.EventArgs
     {
-        public bool ShowProfileSelection { get; set; }
+        public Models.Enums.NewWindowAction Action { get; set; }
+        public Guid ProfileId { get; set; }
     }
 }

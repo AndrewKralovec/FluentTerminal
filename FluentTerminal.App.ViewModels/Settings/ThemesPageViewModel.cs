@@ -1,10 +1,13 @@
 ﻿using FluentTerminal.App.Services;
+using FluentTerminal.App.Services.Utilities;
+using FluentTerminal.App.ViewModels.Infrastructure;
 using FluentTerminal.Models;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace FluentTerminal.App.ViewModels.Settings
 {
@@ -30,7 +33,7 @@ namespace FluentTerminal.App.ViewModels.Settings
             _fileSystemService = fileSystemService;
 
             CreateThemeCommand = new RelayCommand(CreateTheme);
-            ImportThemeCommand = new RelayCommand(ImportTheme);
+            ImportThemeCommand = new AsyncCommand(ImportTheme);
             CloneCommand = new RelayCommand<ThemeViewModel>(CloneTheme);
 
             _settingsService.TerminalOptionsChanged += OnTerminalOptionsChanged;
@@ -55,7 +58,7 @@ namespace FluentTerminal.App.ViewModels.Settings
         }
 
         public RelayCommand CreateThemeCommand { get; }
-        public RelayCommand ImportThemeCommand { get; }
+        public IAsyncCommand ImportThemeCommand { get; }
         public RelayCommand<ThemeViewModel> CloneCommand { get; set; }
 
         public double BackgroundOpacity
@@ -109,7 +112,7 @@ namespace FluentTerminal.App.ViewModels.Settings
             AddTheme(theme);
         }
 
-        private async void ImportTheme()
+        private async Task ImportTheme()
         {
             var file = await _fileSystemService.OpenFile(_themeParserFactory.SupportedFileTypes).ConfigureAwait(true);
             if (file != null)
@@ -118,7 +121,7 @@ namespace FluentTerminal.App.ViewModels.Settings
 
                 if (parser == null)
                 {
-                    await _dialogService.ShowMessageDialogAsnyc("Import theme failed", "No suitable parser found", DialogButton.OK).ConfigureAwait(false);
+                    await _dialogService.ShowMessageDialogAsnyc(I18N.Translate("ImportThemeFailed"), I18N.Translate("NoSuitableParserFound"), DialogButton.OK).ConfigureAwait(false);
                     return;
                 }
 
@@ -130,7 +133,7 @@ namespace FluentTerminal.App.ViewModels.Settings
                 }
                 catch (Exception exception)
                 {
-                    await _dialogService.ShowMessageDialogAsnyc("Import theme failed", exception.Message, DialogButton.OK).ConfigureAwait(false);
+                    await _dialogService.ShowMessageDialogAsnyc(I18N.Translate("ImportThemeFailed"), exception.Message, DialogButton.OK).ConfigureAwait(false);
                 }
             }
         }

@@ -1,4 +1,6 @@
-﻿using FluentTerminal.App.ViewModels.Settings;
+﻿using System;
+using FluentTerminal.App.ViewModels.Settings;
+using Windows.Storage.Pickers;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 

@@ -11,12 +11,11 @@ namespace FluentTerminal.App.Adapters
         public DispatcherTimerAdapter()
         {
             _dispatcherTimer = new DispatcherTimer();
-            _dispatcherTimer.Tick += OnDispatcherTimerTick;
         }
 
         private void OnDispatcherTimerTick(object sender, object e)
         {
-            Tick?.Invoke(this, null);
+            Tick?.Invoke(this, EventArgs.Empty);
         }
 
         public TimeSpan Interval
@@ -31,12 +30,14 @@ namespace FluentTerminal.App.Adapters
 
         public void Start()
         {
+            _dispatcherTimer.Tick += OnDispatcherTimerTick;
             _dispatcherTimer.Start();
         }
 
         public void Stop()
         {
             _dispatcherTimer.Stop();
+            _dispatcherTimer.Tick -= OnDispatcherTimerTick;
         }
     }
 }

@@ -13,10 +13,15 @@ namespace FluentTerminal.Models
         public bool CopyOnSelect { get; set; }
         public MouseAction MouseMiddleClickAction { get; set; }
         public MouseAction MouseRightClickAction { get; set; }
-        public bool AlwaysShowTabs { get; set; }
         public bool ShowNewOutputIndicator { get; set; }
         public bool EnableTrayIcon { get; set; }
-        public bool AlwaysUseWinPty { get; set; }
         public bool ShowCustomTitleInTitlebar { get; set; }
+        public bool UseMoshByDefault { get; set; }
+        public bool AutoFallbackToWindowsUsernameInLinks { get; set; }
+        public bool RTrimCopiedLines { get; set; }
+        public bool MuteTerminalBeeps { get; set; }
+        public bool EnableLogging { get; set; }
+        public bool PrintableOutputOnly { get; set; }
+        public string LogDirectoryPath { get; set; }
     }
 }

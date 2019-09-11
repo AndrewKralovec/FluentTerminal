@@ -1,9 +1,9 @@
 ﻿namespace FluentTerminal.Models.Responses
 {
-    public class CreateTerminalResponse
+    public class CreateTerminalResponse : TerminalResponse, IMessage
     {
-        public bool Success { get; set; }
-        public string Error { get; set; }
+        public byte Identifier => (byte) MessageIdentifiers.CreateTerminalResponse;
+
         public string ShellExecutableName { get; set; }
     }
 }
