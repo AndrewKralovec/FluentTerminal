@@ -146,17 +146,12 @@ namespace FluentTerminal.App.Dialogs
 
             if (string.IsNullOrEmpty(ViewModel.Username))
             {
-                ViewModel.Username = await _trayProcessCommunicationService.GetUserName();
+                ViewModel.Username = await _trayProcessCommunicationService.GetUserNameAsync();
             }
 
             SetupFocus();
 
-            if (await ShowAsync() != ContentDialogResult.Primary)
-            {
-                return null;
-            }
-
-            return (SshProfile)ViewModel.Model;
+            return await ShowAsync() == ContentDialogResult.Primary ? (SshProfile) ViewModel.Model : null;
         }
     }
 }

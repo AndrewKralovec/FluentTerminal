@@ -4,9 +4,10 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using Windows.UI.Core;
 using FluentTerminal.App.Services;
 using FluentTerminal.Models;
-using FluentTerminal.Models.Enums;
+using FluentTerminal.Models.Messages;
 using GalaSoft.MvvmLight;
 
 namespace FluentTerminal.App.ViewModels.Profiles
@@ -17,13 +18,6 @@ namespace FluentTerminal.App.ViewModels.Profiles
     /// </summary>
     public abstract class ProfileProviderViewModelBase : ViewModelBase
     {
-        #region Static
-
-        private static readonly LineEndingStyle[] LineEndingStylesArray =
-            Enum.GetValues(typeof(LineEndingStyle)).Cast<LineEndingStyle>().ToArray();
-
-        #endregion Static
-
         #region Fields
 
         protected readonly ISettingsService SettingsService;
@@ -65,17 +59,6 @@ namespace FluentTerminal.App.ViewModels.Profiles
         public ObservableCollection<TabTheme> TabThemes { get; }
 
         public ObservableCollection<TerminalTheme> TerminalThemes { get; }
-
-        public ObservableCollection<LineEndingStyle> LineEndingStyles { get; } =
-            new ObservableCollection<LineEndingStyle>(LineEndingStylesArray);
-
-        private LineEndingStyle _lineEndingTranslation;
-
-        public LineEndingStyle LineEndingTranslation
-        {
-            get => _lineEndingTranslation;
-            set => Set(ref _lineEndingTranslation, value);
-        }
 
         private TabTheme _selectedTabTheme;
 
@@ -128,13 +111,7 @@ namespace FluentTerminal.App.ViewModels.Profiles
 
                 if (theme == null)
                 {
-                    // How to handle attempt to setting null theme?
-                    // 1) Throw an exception:
-                    //throw new ArgumentNullException();
-                    // 2) Ignore the attempt:
-                    //return;
-                    // 3) Use default theme (probably the best):
-                    theme = TerminalThemes.First();
+                    return;
                 }
                 else if (!TerminalThemes.Contains(theme))
                 {
@@ -171,6 +148,14 @@ namespace FluentTerminal.App.ViewModels.Profiles
             set => Set(ref _useConPty, value);
         }
 
+        private bool _useBuffer;
+
+        public bool UseBuffer
+        {
+            get => _useBuffer;
+            set => Set(ref _useBuffer, value);
+        }
+
         #endregion Properties
 
         #region Constructor
@@ -194,8 +179,8 @@ namespace FluentTerminal.App.ViewModels.Profiles
 
             SelectedTerminalTheme = TerminalThemes.First();
 
-            settingsService.ThemeAdded += OnThemeAdded;
-            settingsService.ThemeDeleted += OnThemeDeleted;
+            MessengerInstance.Register<ThemeAddedMessage>(this, OnThemeAdded);
+            MessengerInstance.Register<ThemeDeletedMessage>(this, OnThemeDeleted);
 
             Initialize(Model);
         }
@@ -204,35 +189,35 @@ namespace FluentTerminal.App.ViewModels.Profiles
 
         #region Methods
 
-        private void OnThemeDeleted(object sender, Guid e)
+        private void OnThemeDeleted(ThemeDeletedMessage message)
         {
-            ApplicationView.RunOnDispatcherThread(() =>
+            var theme = TerminalThemes.FirstOrDefault(t => t.Id.Equals(message.ThemeId));
+
+            if (theme == null)
             {
-                var theme = TerminalThemes.FirstOrDefault(t => t.Id.Equals(e));
+                return;
+            }
 
-                if (theme == null)
-                {
-                    return;
-                }
-
+            ApplicationView.ExecuteOnUiThreadAsync(() =>
+            {
                 TerminalThemes.Remove(theme);
 
-                if (_terminalThemeId.Equals(e))
+                if (_terminalThemeId.Equals(message.ThemeId))
                 {
                     SelectedTerminalTheme = TerminalThemes.First();
                 }
-            }, false);
+            }, CoreDispatcherPriority.Low, true);
         }
 
-        private void OnThemeAdded(object sender, TerminalTheme e)
+        private void OnThemeAdded(ThemeAddedMessage message)
         {
-            ApplicationView.RunOnDispatcherThread(() => TerminalThemes.Add(e), false);
+            ApplicationView.ExecuteOnUiThreadAsync(() => TerminalThemes.Add(message.Theme), CoreDispatcherPriority.Low);
         }
 
         private void Initialize(ShellProfile profile)
         {
-            LineEndingTranslation = profile.LineEndingTranslation;
             UseConPty = profile.UseConPty;
+            UseBuffer = profile.UseBuffer;
             TerminalThemeId = profile.TerminalThemeId;
             TabThemeId = profile.TabThemeId;
         }
@@ -244,8 +229,8 @@ namespace FluentTerminal.App.ViewModels.Profiles
 
         protected virtual Task CopyToProfileAsync(ShellProfile profile)
         {
-            profile.LineEndingTranslation = _lineEndingTranslation;
             profile.UseConPty = _useConPty;
+            profile.UseBuffer = _useBuffer;
             profile.TerminalThemeId = _terminalThemeId;
             profile.TabThemeId = _tabThemeId;
             return Task.CompletedTask;
@@ -262,8 +247,8 @@ namespace FluentTerminal.App.ViewModels.Profiles
         /// </summary>
         public virtual bool HasChanges()
         {
-            return Model.LineEndingTranslation != _lineEndingTranslation ||
-                   Model.UseConPty != _useConPty ||
+            return Model.UseConPty != _useConPty ||
+                   Model.UseBuffer != _useBuffer ||
                    !Model.TerminalThemeId.Equals(_terminalThemeId) ||
                    Model.TabThemeId != _tabThemeId;
         }
@@ -279,19 +264,19 @@ namespace FluentTerminal.App.ViewModels.Profiles
         /// message returned by <see cref="ValidateAsync"/> method.</returns>
         public async Task<string> AcceptChangesAsync(bool acceptIfInvalid = false)
         {
-            var error = await ValidateAsync();
+            var error = await ValidateAsync().ConfigureAwait(false);
 
             if (acceptIfInvalid || string.IsNullOrEmpty(error))
             {
-                await CopyToProfileAsync(Model);
+                await CopyToProfileAsync(Model).ConfigureAwait(false);
             }
 
             return error;
         }
 
-        public void RejectChanges()
+        public Task RejectChangesAsync()
         {
-            ApplicationView.RunOnDispatcherThread(() => LoadFromProfile(Model), false);
+            return ApplicationView.ExecuteOnUiThreadAsync(() => LoadFromProfile(Model));
         }
 
         #endregion Methods
@@ -299,7 +284,7 @@ namespace FluentTerminal.App.ViewModels.Profiles
         #region Links/shortcuts related
 
         private const string UseConPtyQueryStringName = "conpty";
-        private const string LineEndingQueryStringName = "lineending";
+        private const string UseBufferQueryStringName = "buffer";
         private const string TerminalThemeIdQueryStringName = "theme";
         private const string TabThemeIdQueryStringName = "tab";
 
@@ -339,8 +324,7 @@ URL={0}
 
         public string GetBaseQueryString()
         {
-            var queryString =
-                $"{UseConPtyQueryStringName}={_useConPty}&{LineEndingQueryStringName}={_lineEndingTranslation}";
+            var queryString = $"{UseConPtyQueryStringName}={_useConPty}&{UseBufferQueryStringName}={_useBuffer}";
 
             if (_tabThemeId != TabThemes.First().Id)
             {
@@ -371,11 +355,11 @@ URL={0}
             }
 
             keyValue = queryStringParams.FirstOrDefault(t =>
-                LineEndingQueryStringName.Equals(t.Item1, StringComparison.OrdinalIgnoreCase));
+                UseBufferQueryStringName.Equals(t.Item1, StringComparison.OrdinalIgnoreCase));
 
-            if (!string.IsNullOrEmpty(keyValue?.Item2) && Enum.TryParse(keyValue.Item2, true, out LineEndingStyle lineEndingTranslation))
+            if (!string.IsNullOrEmpty(keyValue?.Item2) && bool.TryParse(keyValue.Item2?.ToLower(), out bool useBuffer))
             {
-                LineEndingTranslation = lineEndingTranslation;
+                UseConPty = useBuffer;
             }
 
             keyValue = queryStringParams.FirstOrDefault(t =>

@@ -22,7 +22,7 @@ namespace FluentTerminal.App.ViewModels.Settings
             _defaultValueProvider = defaultValueProvider;
             _applicationSettings = _settingsService.GetApplicationSettings();
 
-            RestoreDefaultsCommand = new RelayCommand(async () => await RestoreDefaults().ConfigureAwait(false));
+            RestoreDefaultsCommand = new RelayCommand(async () => await RestoreDefaultsAsync().ConfigureAwait(false));
         }
 
         public bool CopyOnSelect
@@ -71,6 +71,12 @@ namespace FluentTerminal.App.ViewModels.Settings
             set { if (value) MouseRightClickAction = MouseAction.Paste; }
         }
 
+        public bool MouseRightClickCopySelectionOrPasteIsSelected
+        {
+            get => MouseRightClickAction == MouseAction.CopySelectionOrPaste;
+            set { if (value) MouseRightClickAction = MouseAction.CopySelectionOrPaste; }
+        }
+
         public MouseAction MouseMiddleClickAction
         {
             get => _applicationSettings.MouseMiddleClickAction;
@@ -103,11 +109,21 @@ namespace FluentTerminal.App.ViewModels.Settings
             set { if (value) MouseMiddleClickAction = MouseAction.Paste; }
         }
 
+        public bool MouseMiddleClickCopySelectionOrPasteIsSelected
+        {
+            get => MouseMiddleClickAction == MouseAction.CopySelectionOrPaste;
+            set { if (value) MouseMiddleClickAction = MouseAction.CopySelectionOrPaste; }
+        }
+
         public RelayCommand RestoreDefaultsCommand { get; }
 
-        private async Task RestoreDefaults()
+        // Requires UI thread
+        private async Task RestoreDefaultsAsync()
         {
-            var result = await _dialogService.ShowMessageDialogAsnyc(I18N.Translate("PleaseConfirm"), I18N.Translate("ConfirmRestoreMouseSettings"), DialogButton.OK, DialogButton.Cancel).ConfigureAwait(true);
+            // ConfigureAwait(true) because we're setting some view-model properties afterwards.
+            var result = await _dialogService.ShowMessageDialogAsync(I18N.Translate("PleaseConfirm"),
+                    I18N.Translate("ConfirmRestoreMouseSettings"), DialogButton.OK, DialogButton.Cancel)
+                .ConfigureAwait(true);
 
             if (result == DialogButton.OK)
             {

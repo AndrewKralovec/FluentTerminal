@@ -68,6 +68,20 @@ namespace FluentTerminal.App.ViewModels.Settings
             }
         }
 
+        public bool UseAcrylicBackground
+        {
+            get => _terminalOptions.UseAcrylicBackground;
+            set
+            {
+                if (_terminalOptions.UseAcrylicBackground != value)
+                {
+                    _terminalOptions.UseAcrylicBackground = value;
+                    _settingsService.SaveTerminalOptions(_terminalOptions);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
         public string FontFamily
         {
             get => _terminalOptions.FontFamily;
@@ -76,6 +90,20 @@ namespace FluentTerminal.App.ViewModels.Settings
                 if (_terminalOptions.FontFamily != value)
                 {
                     _terminalOptions.FontFamily = value;
+                    _settingsService.SaveTerminalOptions(_terminalOptions);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        public int FontWeight
+        {
+            get => _terminalOptions.FontWeight;
+            set
+            {
+                if (_terminalOptions.FontWeight != value)
+                {
+                    _terminalOptions.FontWeight = value;
                     _settingsService.SaveTerminalOptions(_terminalOptions);
                     RaisePropertyChanged();
                 }
@@ -150,34 +178,6 @@ namespace FluentTerminal.App.ViewModels.Settings
             }
         }
 
-        public bool BoldText
-        {
-            get => _terminalOptions.BoldText;
-            set
-            {
-                if (_terminalOptions.BoldText != value)
-                {
-                    _terminalOptions.BoldText = value;
-                    _settingsService.SaveTerminalOptions(_terminalOptions);
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public bool ShowTextCopied
-        {
-            get => _terminalOptions.ShowTextCopied;
-            set
-            {
-                if (_terminalOptions.ShowTextCopied != value)
-                {
-                    _terminalOptions.ShowTextCopied = value;
-                    _settingsService.SaveTerminalOptions(_terminalOptions);
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
         public IEnumerable<FontInfo> Fonts { get; }
 
         public int FontSize
@@ -226,9 +226,13 @@ namespace FluentTerminal.App.ViewModels.Settings
             }
         }
 
-        private async Task RestoreDefaults()
+        // Requires UI thread
+        private async Task RestoreDefaultsAsync()
         {
-            var result = await _dialogService.ShowMessageDialogAsnyc(I18N.Translate("PleaseConfirm"), I18N.Translate("ConfirmRestoreTerminalOptions"), DialogButton.OK, DialogButton.Cancel).ConfigureAwait(true);
+            // ConfigureAwait(true) because we're setting some view-model properties afterwards.
+            var result = await _dialogService.ShowMessageDialogAsync(I18N.Translate("PleaseConfirm"),
+                    I18N.Translate("ConfirmRestoreTerminalOptions"), DialogButton.OK, DialogButton.Cancel)
+                .ConfigureAwait(true);
 
             if (result == DialogButton.OK)
             {
@@ -238,10 +242,9 @@ namespace FluentTerminal.App.ViewModels.Settings
                 ScrollBarStyle = defaults.ScrollBarStyle;
                 FontFamily = defaults.FontFamily;
                 FontSize = defaults.FontSize;
-                BoldText = defaults.BoldText;
+                FontWeight = defaults.FontWeight;
                 BackgroundOpacity = defaults.BackgroundOpacity;
                 ScrollBackLimit = defaults.ScrollBackLimit.ToString();
-                ShowTextCopied = defaults.ShowTextCopied;
                 WordSeparator = defaults.WordSeparator;
             }
         }
@@ -252,10 +255,10 @@ namespace FluentTerminal.App.ViewModels.Settings
             _dialogService = dialogService;
             _defaultValueProvider = defaultValueProvider;
 
-            RestoreDefaultsCommand = new RelayCommand(async () => await RestoreDefaults().ConfigureAwait(false));
+            RestoreDefaultsCommand = new RelayCommand(async () => await RestoreDefaultsAsync().ConfigureAwait(false));
 
             Fonts = systemFontService.GetSystemFontFamilies().OrderBy(s => s.Name);
-            Sizes = Enumerable.Range(1, 72);
+            Sizes = Enumerable.Range(2, 72);
 
             _terminalOptions = _settingsService.GetTerminalOptions();
         }

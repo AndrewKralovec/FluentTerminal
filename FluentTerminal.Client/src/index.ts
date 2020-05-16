@@ -1,31 +1,36 @@
-import { Terminal, ITerminalOptions } from 'xterm';
-import { AttachAddon } from 'xterm-addon-attach';
+import { Terminal, ITerminalOptions, ILinkMatcherOptions, FontWeight } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { SearchAddon } from 'xterm-addon-search';
-import * as SerializeAddon from "./xterm-addon-serialize/src/SerializeAddon";
+import { WebLinksAddon } from 'xterm-addon-web-links';
+import { SerializeAddon } from "xterm-addon-serialize";
+import { Unicode11Addon } from "xterm-addon-unicode11";
 
 interface ExtendedWindow extends Window {
   keyBindings: any[];
-  term: any;
+  term: Terminal;
   terminalBridge: any;
+  hoveredUri: string;
 
   createTerminal(options: any, theme: any, keyBindings: any): void;
   connectToWebSocket(url: string): void;
   changeTheme(theme: any): void;
   changeOptions(options: any): void;
   changeKeyBindings(keyBindings: any): void;
-  findNext(content: string): void;
-  findPrevious(content: string): void;
+  findNext(content: string, caseSensitive: boolean, wholeWord: boolean, regex: boolean): void;
+  findPrevious(content: string, caseSensitive: boolean, wholeWord: boolean, regex: boolean): void;
   serializeTerminal() : void;
 }
 
 declare var window: ExtendedWindow;
 
-let term: any;
-let fitAddon: any;
-let searchAddon: any;
-let serializeAddon: any;
-let socket: WebSocket;
+let term: Terminal;
+let fitAddon: FitAddon;
+let searchAddon: SearchAddon;
+let serializeAddon: SerializeAddon;
+let webLinksAddon: WebLinksAddon;
+let unicode11Addon: Unicode11Addon;
+let altGrPressed = false;
+
 const terminalContainer = document.getElementById('terminal-container');
 
 function replaceAll(searchString, replaceString, str) {
@@ -51,6 +56,7 @@ window.createTerminal = (options, theme, keyBindings) => {
   theme = JSON.parse(theme);
 
   window.keyBindings = JSON.parse(keyBindings);
+  window.hoveredUri = "";
 
   options = JSON.parse(options);
 
@@ -59,8 +65,8 @@ window.createTerminal = (options, theme, keyBindings) => {
   var terminalOptions: ITerminalOptions = {
     fontFamily: options.fontFamily,
     fontSize: options.fontSize,
-    fontWeight: options.boldText ? 'bold' : 'normal',
-    fontWeightBold: options.boldText ? '400' : 'bold',
+    fontWeight: options.fontWeight,
+    fontWeightBold: convertBoldText(options.fontWeight),
     cursorStyle: options.cursorStyle,
     cursorBlink: options.cursorBlink,
     bellStyle: options.bellStyle,
@@ -73,14 +79,44 @@ window.createTerminal = (options, theme, keyBindings) => {
 
   term = new Terminal(terminalOptions);
 
+  const linkMatcherOptions: ILinkMatcherOptions = {
+    leaveCallback: () => {
+      window.hoveredUri = "";
+    },
+    tooltipCallback: (event: MouseEvent, uri: string) => {
+      window.hoveredUri = uri;
+    }
+  };
+
   searchAddon = new SearchAddon();
   term.loadAddon(searchAddon);
   fitAddon = new FitAddon();
   term.loadAddon(fitAddon);
-  serializeAddon = new SerializeAddon.SerializeAddon();
+  serializeAddon = new SerializeAddon();
   term.loadAddon(serializeAddon);
+  webLinksAddon = new WebLinksAddon((_, u) => window.open(u), linkMatcherOptions);
+  term.loadAddon(webLinksAddon);
+  unicode11Addon = new Unicode11Addon();
+  term.loadAddon(unicode11Addon);
+  term.unicode.activeVersion = '11';
 
   window.term = term;
+
+  window.terminalBridge.onoutput = (data => {
+    term.writeUtf8(data);
+  });
+
+  window.terminalBridge.onpaste = (text => {
+    term.paste(text);
+  });
+
+  term.onData(data => {
+    window.terminalBridge.inputReceived(data);
+  });
+
+  term.onBinary(binary => {
+    window.terminalBridge.binaryReceived(binary);
+  });
 
   term.onResize(({ cols, rows }) => {
     window.terminalBridge.notifySizeChanged(cols, rows);
@@ -103,21 +139,43 @@ window.createTerminal = (options, theme, keyBindings) => {
   let resizeTimeout: any;
   window.onresize = function () {
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(fitAddon.fit(), 500);
+    resizeTimeout = setTimeout(() => fitAddon.fit(), 500);
   }
 
-  window.onmouseup = function (e) {
+  window.onmouseup = (e) => {
     if (e.button == 1) {
-      window.terminalBridge.notifyMiddleClick(e.clientX, e.clientY, term.hasSelection());
+      window.terminalBridge.notifyMiddleClick(e.clientX, e.clientY, term.hasSelection(), window.hoveredUri);
     } else if (e.button == 2) {
-      window.terminalBridge.notifyRightClick(e.clientX, e.clientY, term.hasSelection());
+      window.terminalBridge.notifyRightClick(e.clientX, e.clientY, term.hasSelection(), window.hoveredUri);
     }
   }
+
+  window.onkeydown = (e) => {
+    // Disable WebView zooming to prevent crash on too small font size
+    if ((e.ctrlKey && !e.altKey && (e.keyCode === 189 || e.keyCode === 187)) ||
+        (e.ctrlKey && (e.key === "Add" || e.key === "Subtract"))) {
+      e.preventDefault();
+    }
+  }
+
+  window.addEventListener("wheel", function(event){
+    // Disable WebView zooming to prevent crash on too small font size
+    if(event.ctrlKey){
+      event.preventDefault();
+    }
+  });
 
   term.attachCustomKeyEventHandler(function (e) {
-    if (e.type != "keydown") {
+    if (e.altKey && e.type === "keydown" && e.location === 2) {
+        altGrPressed = true;
+    } else if (e.altKey && e.type === "keyup" && e.key === "Control") {
+      altGrPressed = false
+    }
+
+    if (e.type != "keydown" || altGrPressed) {
       return true;
     }
+
     for (var i = 0; i < window.keyBindings.length; i++) {
       var keyBinding = window.keyBindings[i];
       if (keyBinding.ctrl == e.ctrlKey
@@ -149,27 +207,12 @@ window.createTerminal = (options, theme, keyBindings) => {
     return true;
   });
 
+  window.terminalBridge.initialized();
+
   return JSON.stringify({
     rows: term.rows,
     columns: term.cols
   });
-}
-
-function attachTerminal() {
-  term.loadAddon(new AttachAddon(socket, {inputUtf8: true}));
-  term._initialized = true;
-}
-
-window.connectToWebSocket =  (url: string) => {
-  socket = new WebSocket(url);
-  socket.binaryType = 'arraybuffer';
-  socket.onerror = function (event) {
-    window.terminalBridge.reportError(`Socket error: ${JSON.stringify(event)}`);
-  }
-  socket.onclose = function (event) {
-    window.terminalBridge.reportError(`Socket closed: ${JSON.stringify(event)}`);
-  };
-  socket.onopen = attachTerminal;
 }
 
 window.changeTheme = (theme) => {
@@ -185,8 +228,8 @@ window.changeOptions = (options) => {
   term.setOption('cursorStyle', options.cursorStyle);
   term.setOption('fontFamily', options.fontFamily);
   term.setOption('fontSize', options.fontSize);
-  term.setOption('fontWeight', options.boldText ? 'bold' : 'normal');
-  term.setOption('fontWeightBold', options.boldText ? 'bolder' : 'bold');
+  term.setOption('fontWeight', options.fontWeight);
+  term.setOption('fontWeightBold', convertBoldText(options.fontWeight));
   term.setOption('scrollback', options.scrollBackLimit);
   term.setOption('wordSeparator', DecodeSpecialChars(options.wordSeparator));
   setScrollBarStyle(options.scrollBarStyle);
@@ -211,14 +254,18 @@ window.changeKeyBindings = (keyBindings) => {
   window["keyBindings"] = keyBindings;
 }
 
-window.findNext = (content: string) => {
-  searchAddon.findNext(content);
+window.findNext = (content: string, caseSensitive: boolean, wholeWord: boolean, regex: boolean) => {
+  searchAddon.findNext(content, { caseSensitive: caseSensitive, wholeWord: wholeWord, regex: regex });
 }
 
-window.findPrevious = (content: string) => {
-  searchAddon.findPrevious(content);
+window.findPrevious = (content: string, caseSensitive: boolean, wholeWord: boolean, regex: boolean) => {
+  searchAddon.findPrevious(content, { caseSensitive: caseSensitive, wholeWord: wholeWord, regex: regex });
 }
 
 document.oncontextmenu = function () {
   return false;
 };
+
+function convertBoldText(fontWeight: FontWeight) : FontWeight {
+  return parseInt(fontWeight) > 600 ? '900' : 'bold';
+}

@@ -35,11 +35,12 @@
             Grid.ColumnSpan="2"
             Margin="{StaticResource HeaderMargin}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="160" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <TextBlock
                 x:Uid="Profiles"
+                Grid.Column="0"
                 VerticalAlignment="Center"
                 FontSize="28"
                 Style="{StaticResource TitleTextBlockStyle}"
@@ -242,23 +243,11 @@
                                     SelectedItem="{Binding ProfileVm.SelectedTerminalTheme, Mode=TwoWay}" />
 
                                 <ToggleSwitch
+                                    x:Uid="UseConPty"
                                     Margin="{StaticResource ItemMargin}"
-                                    Header="Use ConPty"
+                                    Header="{x:Bind Converter={StaticResource I18NConverter}, ConverterParameter=UseConPty}"
                                     IsEnabled="{x:Bind InEditMode, Mode=OneWay}"
                                     IsOn="{x:Bind ProfileVm.UseConPty, Mode=TwoWay}" />
-
-                                <ComboBox
-                                    x:Uid="LineEndingMode"
-                                    Margin="{StaticResource ItemMargin}"
-                                    VerticalAlignment="Center"
-                                    ItemsSource="{x:Bind ProfileVm.LineEndingStyles}"
-                                    SelectedItem="{Binding ProfileVm.LineEndingTranslation, Mode=TwoWay}">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="enums:LineEndingStyle">
-                                            <TextBlock Text="{x:Bind Converter={StaticResource I18NConverter}, ConverterParameter=LineEndingStyle}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
 
                                 <StackPanel Margin="{StaticResource ItemMargin}">
                                     <TextBlock
@@ -345,7 +334,7 @@
                                 <controls:HeaderedContentControl
                                     Margin="{StaticResource ItemMargin}"
                                     HorizontalContentAlignment="Stretch"
-                                    Header="Use ConPty">
+                                    Header="{x:Bind Converter={StaticResource I18NConverter}, ConverterParameter=UseConPty}">
                                     <ContentControl
                                         Margin="0,6,0,0"
                                         Content="{x:Bind ProfileVm.UseConPty, Mode=OneWay}"
@@ -376,18 +365,6 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                </controls:HeaderedContentControl>
-
-                                <controls:HeaderedContentControl
-                                    x:Uid="LineEndingMode"
-                                    Margin="{StaticResource ItemMargin}"
-                                    HorizontalContentAlignment="Stretch"
-                                    Header="Line ending translation mode">
-                                    <ContentControl
-                                        Content="{x:Bind ProfileVm.LineEndingTranslation, Mode=OneWay, Converter={StaticResource I18NConverter}, ConverterParameter=LineEndingStyle}"
-                                        ContentTemplateSelector="{StaticResource TerminalThemeTemplateSelector}"
-                                        FontSize="18"
-                                        FontWeight="Light" />
                                 </controls:HeaderedContentControl>
 
                                 <controls:HeaderedContentControl

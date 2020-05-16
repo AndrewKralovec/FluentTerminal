@@ -13,6 +13,8 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel;
+using FluentTerminal.Models.Messages;
+using GalaSoft.MvvmLight.Messaging;
 
 namespace FluentTerminal.SystemTray.Services
 {
@@ -33,19 +35,19 @@ namespace FluentTerminal.SystemTray.Services
 
         private static readonly Regex EscapeSequencePattern = new Regex(@"((\x9B|\x1B\[)[0-?]*[ -\/]*[@-~])|((\x9D|\x1B\]).*\x07)", RegexOptions.Compiled);
 
-        private Dictionary<byte, string> _cachedLogPath = new Dictionary<byte, string>();
+        private readonly Dictionary<byte, string> _cachedLogPath = new Dictionary<byte, string>();
 
         private ApplicationSettings _applicationSettings;
 
         public TerminalsManager(ISettingsService settingsService)
         {
             _applicationSettings = settingsService.GetApplicationSettings();
-            settingsService.ApplicationSettingsChanged += OnApplicationSettingsChanged;
+            Messenger.Default.Register<ApplicationSettingsChangedMessage>(this, OnApplicationSettingsChanged);
         }
 
-        private void OnApplicationSettingsChanged(object sender, ApplicationSettings e)
+        private void OnApplicationSettingsChanged(ApplicationSettingsChangedMessage message)
         {
-            _applicationSettings = e;
+            _applicationSettings = message.ApplicationSettings;
         }
 
         public void DisplayTerminalOutput(byte terminalId, byte[] output)
@@ -55,17 +57,15 @@ namespace FluentTerminal.SystemTray.Services
                 var logOutput = output;
                 if (_applicationSettings.PrintableOutputOnly)
                 {
-                    string strOutput = System.Text.Encoding.UTF8.GetString(logOutput);
+                    var strOutput = Encoding.UTF8.GetString(logOutput);
                     strOutput = EscapeSequencePattern.Replace(strOutput, "");
                     logOutput = Encoding.UTF8.GetBytes(strOutput);
                 }
 
                 try
                 {
-                    using (var logFileStream = System.IO.File.Open(GetLogFilePath(terminalId), System.IO.FileMode.Append))
-                    {
-                        logFileStream.Write(logOutput, 0, logOutput.Length);
-                    }
+                    using var logFileStream = System.IO.File.Open(GetLogFilePath(terminalId), System.IO.FileMode.Append);
+                    logFileStream.Write(logOutput, 0, logOutput.Length);
                 }
                 catch (Exception e)
                 {
@@ -82,12 +82,12 @@ namespace FluentTerminal.SystemTray.Services
 
         private string GetLogFilePath(byte terminalId)
         {
-            if (_terminals.ContainsKey(terminalId) == false)
-                return String.Empty;
+            if (!_terminals.ContainsKey(terminalId))
+                return string.Empty;
 
-            if (_cachedLogPath.ContainsKey(terminalId) == false)
+            if (!_cachedLogPath.ContainsKey(terminalId))
             {
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
                 sb.Append(_applicationSettings.LogDirectoryPath);
                 sb.Append(Path.DirectorySeparatorChar);
                 sb.Append(_terminals[terminalId].StartTime.ToString("yyyyMMddhhmmssfff"));
@@ -133,17 +133,18 @@ namespace FluentTerminal.SystemTray.Services
                 return new CreateTerminalResponse { Error = e.ToString() };
             }
 
+            var name = string.IsNullOrEmpty(request.Profile.Name) ? terminal.ShellExecutableName : request.Profile.Name;
             terminal.ConnectionClosed += OnTerminalConnectionClosed;
             _terminals.Add(terminal.Id, new TerminalSessionInfo
             {
-                ProfileName = String.IsNullOrEmpty(request.Profile.Name) ? terminal.ShellExecutableName : request.Profile.Name,
+                ProfileName = name,
                 StartTime = DateTime.Now,
                 Session = terminal
             });
             return new CreateTerminalResponse
             {
                 Success = true,
-                ShellExecutableName = terminal.ShellExecutableName
+                Name = name
             };
         }
 
@@ -151,7 +152,14 @@ namespace FluentTerminal.SystemTray.Services
         {
             if (_terminals.TryGetValue(id, out TerminalSessionInfo sessionInfo))
             {
-                sessionInfo.Session.Write(data);
+                try
+                {
+                    sessionInfo.Session.Write(data);
+                }
+                catch (IOException e)
+                {
+                    Logger.Instance.Error($"TerminalsManager.Write: sending user input to terminal with id '{id}' failed with exception: {e}");
+                }
             }
         }
 

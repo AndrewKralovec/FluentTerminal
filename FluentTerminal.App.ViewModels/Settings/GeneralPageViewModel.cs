@@ -4,7 +4,6 @@ using FluentTerminal.App.ViewModels.Infrastructure;
 using FluentTerminal.Models;
 using FluentTerminal.Models.Enums;
 using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -40,8 +39,8 @@ namespace FluentTerminal.App.ViewModels.Settings
 
             _applicationSettings = _settingsService.GetApplicationSettings();
 
-            RestoreDefaultsCommand = new AsyncCommand(RestoreDefaults);
-            BrowseLogDirectoryCommand = new AsyncCommand(BrowseLogDirectory);
+            RestoreDefaultsCommand = new AsyncCommand(RestoreDefaultsAsync);
+            BrowseLogDirectoryCommand = new AsyncCommand(BrowseLogDirectoryAsync);
         }
 
         public IEnumerable<string> Languages => _applicationLanguageService.Languages;
@@ -62,9 +61,11 @@ namespace FluentTerminal.App.ViewModels.Settings
             }
         }
 
-        public async Task OnNavigatedTo()
+        // Requires UI thread
+        public async Task OnNavigatedToAsync()
         {
-            var startupTaskStatus = await _startupTaskService.GetStatus();
+            // ConfigureAwait(true) because we want to execute SetStartupTaskPropertiesForStatus from the calling (UI) thread.
+            var startupTaskStatus = await _startupTaskService.GetStatusAsync().ConfigureAwait(true);
             SetStartupTaskPropertiesForStatus(startupTaskStatus);
         }
 
@@ -172,7 +173,7 @@ namespace FluentTerminal.App.ViewModels.Settings
                     _settingsService.SaveApplicationSettings(_applicationSettings);
                     RaisePropertyChanged();
 
-                    _trayProcessCommunicationService.MuteTerminal(value);
+                    _trayProcessCommunicationService.MuteTerminalAsync(value);
                 }
             }
         }
@@ -212,6 +213,20 @@ namespace FluentTerminal.App.ViewModels.Settings
                 if (_applicationSettings.LogDirectoryPath != value)
                 {
                     _applicationSettings.LogDirectoryPath = value;
+                    _settingsService.SaveApplicationSettings(_applicationSettings);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        public bool UseConPty
+        {
+            get => _applicationSettings.UseConPty;
+            set
+            {
+                if (_applicationSettings.UseConPty != value)
+                {
+                    _applicationSettings.UseConPty = value;
                     _settingsService.SaveApplicationSettings(_applicationSettings);
                     RaisePropertyChanged();
                 }
@@ -268,6 +283,21 @@ namespace FluentTerminal.App.ViewModels.Settings
                     _applicationSettings.NewTerminalLocation = value;
                     _settingsService.SaveApplicationSettings(_applicationSettings);
                     RaisePropertyChanged();
+                    RaisePropertyChanged(nameof(TabIsSelected));
+                }
+            }
+        }
+
+        public bool TabWindowCascadingAppMenu
+        {
+            get => _applicationSettings.TabWindowCascadingAppMenu;
+            set
+            {
+                if (_applicationSettings.TabWindowCascadingAppMenu != value)
+                {
+                    _applicationSettings.TabWindowCascadingAppMenu = value;
+                    _settingsService.SaveApplicationSettings(_applicationSettings);
+                    RaisePropertyChanged();
                 }
             }
         }
@@ -281,11 +311,10 @@ namespace FluentTerminal.App.ViewModels.Settings
             get => _startupTaskEnabled;
             set
             {
-                if (_startupTaskEnabled != value)
+                if (Set(ref _startupTaskEnabled, value))
                 {
-                    _startupTaskEnabled = value;
-                    RaisePropertyChanged(nameof(StartupTaskEnabled));
-                    SetStartupTaskState(value);
+                    // ReSharper disable once AssignmentIsFullyDiscarded
+                    _ = SetStartupTaskStateAsync(value);
                 }
             }
         }
@@ -299,7 +328,7 @@ namespace FluentTerminal.App.ViewModels.Settings
         public bool TabIsSelected
         {
             get => NewTerminalLocation == NewTerminalLocation.Tab;
-            set { if (value) NewTerminalLocation = NewTerminalLocation.Tab; }
+            set => NewTerminalLocation = value ? NewTerminalLocation.Tab : NewTerminalLocation.Window;
         }
 
         public TabsPosition TabsPosition
@@ -362,15 +391,27 @@ namespace FluentTerminal.App.ViewModels.Settings
             }
         }
 
-        public bool WindowIsSelected
+        public bool ShowTextCopied
         {
-            get => NewTerminalLocation == NewTerminalLocation.Window;
-            set { if (value) NewTerminalLocation = NewTerminalLocation.Window; }
+            get => _applicationSettings.ShowTextCopied;
+            set
+            {
+                if (_applicationSettings.ShowTextCopied != value)
+                {
+                    _applicationSettings.ShowTextCopied = value;
+                    _settingsService.SaveApplicationSettings(_applicationSettings);
+                    RaisePropertyChanged();
+                }
+            }
         }
 
-        private async Task RestoreDefaults()
+        // Requires UI thread
+        private async Task RestoreDefaultsAsync()
         {
-            var result = await _dialogService.ShowMessageDialogAsnyc(I18N.Translate("PleaseConfirm"), I18N.Translate("ConfirmRestoreGeneralSettings"), DialogButton.OK, DialogButton.Cancel).ConfigureAwait(true);
+            // ConfigureAwait(true) because we're setting some view-model properties afterwards
+            var result = await _dialogService.ShowMessageDialogAsync(I18N.Translate("PleaseConfirm"),
+                    I18N.Translate("ConfirmRestoreGeneralSettings"), DialogButton.OK, DialogButton.Cancel)
+                .ConfigureAwait(true);
 
             if (result == DialogButton.OK)
             {
@@ -390,9 +431,12 @@ namespace FluentTerminal.App.ViewModels.Settings
                 EnableLogging = defaults.EnableLogging;
                 PrintableOutputOnly = defaults.PrintableOutputOnly;
                 LogDirectoryPath = defaults.LogDirectoryPath;
+                UseConPty = defaults.UseConPty;
+                ShowTextCopied = defaults.ShowTextCopied;
             }
         }
 
+        // Requires UI thread
         private void SetStartupTaskPropertiesForStatus(StartupTaskStatus startupTaskStatus)
         {
             switch (startupTaskStatus)
@@ -420,27 +464,39 @@ namespace FluentTerminal.App.ViewModels.Settings
                     StartupTaskErrorMessage = I18N.Translate("DisabledByPolicy");
                     CanEnableStartupTask = false;
                     break;
+
+                case StartupTaskStatus.EnabledByPolicy:
+                    StartupTaskEnabled = true;
+                    StartupTaskErrorMessage = I18N.TranslateWithFallback("EnabledByPolicy", "Enabled by policy.");
+                    CanEnableStartupTask = false;
+                    break;
             }
         }
 
-        private async Task SetStartupTaskState(bool enabled)
+        // Requires UI thread
+        private async Task SetStartupTaskStateAsync(bool enabled)
         {
             StartupTaskStatus status;
             if (enabled)
             {
-                status = await _startupTaskService.EnableStartupTask();
+                // ConfigureAwait(true) because we need to execute SetStartupTaskPropertiesForStatus in the calling (UI) thread.
+                status = await _startupTaskService.EnableStartupTaskAsync().ConfigureAwait(true);
             }
             else
             {
-                await _startupTaskService.DisableStartupTask();
-                status = await _startupTaskService.GetStatus();
+                // ConfigureAwait(true) because we need to execute SetStartupTaskPropertiesForStatus in the calling (UI) thread.
+                await _startupTaskService.DisableStartupTaskAsync().ConfigureAwait(true);
+                // ConfigureAwait(true) because we need to execute SetStartupTaskPropertiesForStatus in the calling (UI) thread.
+                status = await _startupTaskService.GetStatusAsync().ConfigureAwait(true);
             }
             SetStartupTaskPropertiesForStatus(status);
         }
 
-        private async Task BrowseLogDirectory()
+        // Requires UI thread
+        private async Task BrowseLogDirectoryAsync()
         {
-            var folder = await _fileSystemService.BrowseForDirectory();
+            // ConfigureAwait(true) because we're setting some view-model properties afterwards.
+            var folder = await _fileSystemService.BrowseForDirectoryAsync().ConfigureAwait(true);
 
             if (folder != null)
             {

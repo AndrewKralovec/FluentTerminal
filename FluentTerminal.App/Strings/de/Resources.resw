@@ -117,9 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="About.Text" xml:space="preserve">
+  <data name="AboutDialog.Title" xml:space="preserve">
     <value>Über</value>
-    <comment>MainPage.xaml</comment>
+    <comment>MainPage.xaml
+Fuzzy</comment>
   </data>
   <data name="Background.Content" xml:space="preserve">
     <value>Hintergrund</value>
@@ -129,9 +130,10 @@
     <value>Blau</value>
     <comment>TabBar.xaml</comment>
   </data>
-  <data name="Close.Text" xml:space="preserve">
+  <data name="Close" xml:space="preserve">
     <value>Schließen</value>
-    <comment>TabBar.xaml</comment>
+    <comment>TabBar.xaml
+Fuzzy</comment>
   </data>
   <data name="ConfirmWindowClosing.Header" xml:space="preserve">
     <value>Nachfragen bevor Fenster geschlossen wird</value>
@@ -647,14 +649,6 @@ Fuzzy</comment>
     <value>Tab schließen</value>
     <comment>Command</comment>
   </data>
-  <data name="Command.ConfigurableNewTab" xml:space="preserve">
-    <value>Konfigurierbarer neuer Tab</value>
-    <comment>Command</comment>
-  </data>
-  <data name="Command.ConfigurableNewWindow" xml:space="preserve">
-    <value>Konfigurierbares neues Fenster</value>
-    <comment>Command</comment>
-  </data>
   <data name="Keybindings.Text" xml:space="preserve">
     <value>Tastaturkürzel</value>
     <comment>KeyBindingSettings.xaml</comment>
@@ -696,14 +690,6 @@ Fuzzy</comment>
   <data name="Command.SelectAll" xml:space="preserve">
     <value>Alles auswählen</value>
     <comment>Command</comment>
-  </data>
-  <data name="SelectProfileUI.PrimaryButtonText" xml:space="preserve">
-    <value>Start</value>
-    <comment>ShellProfileSelectionDialog.xaml</comment>
-  </data>
-  <data name="SelectProfileUI.Title" xml:space="preserve">
-    <value>Profil auswählen</value>
-    <comment>ShellProfileSelectionDialog.xaml</comment>
   </data>
   <data name="Command.ShowSettings" xml:space="preserve">
     <value>Einstellungen öffnen</value>
@@ -851,12 +837,6 @@ Fuzzy</comment>
   <data name="Command.NewSshWindow" xml:space="preserve">
     <value>Neues SSH-Fenster</value>
   </data>
-  <data name="Command.SavedSshNewTab" xml:space="preserve">
-    <value>Neuer Tab mit SSH-Profil</value>
-  </data>
-  <data name="Command.SavedSshNewWindow" xml:space="preserve">
-    <value>Neues Fenster mit SSH-Profil</value>
-  </data>
   <data name="Setting_SShProfiles.Content" xml:space="preserve">
     <value>SSH-Profile</value>
     <comment>Fuzzy</comment>
@@ -973,5 +953,136 @@ Fuzzy</comment>
   </data>
   <data name="EnvironmentVariables.Text" xml:space="preserve">
     <value>Umgebungsvariablen</value>
+  </data>
+  <data name="CloseSearchPanel.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Suche schließen</value>
+  </data>
+  <data name="FindNext.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Nächstes Ergebnis</value>
+  </data>
+  <data name="FindPrevious.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Vorheriges Ergebnis</value>
+  </data>
+  <data name="SearchTextBox.PlaceholderText" xml:space="preserve">
+    <value>Suchbegriff eingeben</value>
+  </data>
+  <data name="Search.Text" xml:space="preserve">
+    <value>Suche</value>
+  </data>
+  <data name="PrintableOutputOnly.Content" xml:space="preserve">
+    <value>Nur darstellbare Ausgaben</value>
+    <comment>Fuzzy</comment>
+  </data>
+  <data name="EnableLogging.Header" xml:space="preserve">
+    <value>Ausgabe zum Debuggen protokollieren</value>
+  </data>
+  <data name="WordSeparator.Header" xml:space="preserve">
+    <value>Worttrennende Zeichen</value>
+  </data>
+  <data name="Recent.Text" xml:space="preserve">
+    <value>Zuletzt verwendet</value>
+  </data>
+  <data name="NewTab_Description" xml:space="preserve">
+    <value>Erstellt einen neuen Tab mit dem Standard-Profil.</value>
+  </data>
+  <data name="NewSshTab_Description" xml:space="preserve">
+    <value>Öffnet eine neue SSH- oder Mosh-Verbinding in einem neuen Tab.</value>
+  </data>
+  <data name="NewQuickTab_Description" xml:space="preserve">
+    <value>Öffnet den Quick Launch-Dialog und startet die Sitzung in einem neuen Tab.</value>
+  </data>
+  <data name="Settings_Description" xml:space="preserve">
+    <value>Öffnet das Einstellungen-Fenster.</value>
+  </data>
+  <data name="About_Description" xml:space="preserve">
+    <value>Allgemeine Information zur App.</value>
+  </data>
+  <data name="Recent_Description" xml:space="preserve">
+    <value>Zuletzt verwendete Sitzungen.</value>
+  </data>
+  <data name="MenuItem_DefaultProfile_Description" xml:space="preserve">
+    <value>Erstellt eine neue Sitzung mit dem Standard-Profil.</value>
+  </data>
+  <data name="MenuItem_Remote_Text" xml:space="preserve">
+    <value>Verbinden...</value>
+  </data>
+  <data name="MenuItem_Remote_Description" xml:space="preserve">
+    <value>Öffnet einen Dialog zum Erstellen einer neuen SSH- oder Mosh-Verbindung.</value>
+  </data>
+  <data name="MenuItem_QuickLaunch_Text" xml:space="preserve">
+    <value>Quick Launch...</value>
+  </data>
+  <data name="MenuItem_QuickLaunch_Description" xml:space="preserve">
+    <value>Öffnet einen Quick Launch-Dialog zum Erstellen einer neuen Sitzung.</value>
+  </data>
+  <data name="MenuItem_NewWindow_Text" xml:space="preserve">
+    <value>Neues Fenster</value>
+  </data>
+  <data name="MenuItem_NewTab_Text" xml:space="preserve">
+    <value>Neuer Tab</value>
+  </data>
+  <data name="MenuItem_NewTab_Description" xml:space="preserve">
+    <value>Erstellt eine Sitzung in einem neuen Tab.</value>
+  </data>
+  <data name="MenuItem_NewWindow_Description" xml:space="preserve">
+    <value>Erstellt eine Sitzung in einem neuen Fenster.</value>
+  </data>
+  <data name="AppMenuType.Text" xml:space="preserve">
+    <value>Menü-Stil</value>
+  </data>
+  <data name="AppMenuType_Flat.Content" xml:space="preserve">
+    <value>Flach, folgt der &quot;Neue Terminals öffnen als...&quot; Einstellung.</value>
+  </data>
+  <data name="AppMenuType_Cascading.Content" xml:space="preserve">
+    <value>In &quot;Neuer Tab&quot;, &quot;Neues Fenster&quot; unterteilt.</value>
+  </data>
+  <data name="Quit.Text" xml:space="preserve">
+    <value>Beenden</value>
+  </data>
+  <data name="Quit.Description" xml:space="preserve">
+    <value>Fluent Terminal beenden</value>
+  </data>
+  <data name="EnabledByPolicy" xml:space="preserve">
+    <value>Durch Windows-Gruppenrichtlinie aktiviert.</value>
+  </data>
+  <data name="BackgroundImage.Content" xml:space="preserve">
+    <value>Hintergrundbild</value>
+  </data>
+  <data name="AcrylicBackground.Header" xml:space="preserve">
+    <value>Hintergrund mit Acryl-Effekt</value>
+    <comment>Fuzzy</comment>
+  </data>
+  <data name="ConfirmDeleteBackgroundImage" xml:space="preserve">
+    <value>Sind Sie sicher dass Sie dieses Hintergrundbild löschen möchten?</value>
+  </data>
+  <data name="Colors.Text" xml:space="preserve">
+    <value>Farben</value>
+  </data>
+  <data name="BrightColors.Text" xml:space="preserve">
+    <value>Helle Farben</value>
+  </data>
+  <data name="CopyLink" xml:space="preserve">
+    <value>Link kopieren</value>
+  </data>
+  <data name="SearchWithRegex.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Regex</value>
+  </data>
+  <data name="SearchWholeWord.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Ganzes Wort</value>
+  </data>
+  <data name="SearchCaseSensitive.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Groß-/Kleinschreibung beachten</value>
+  </data>
+  <data name="MouseCopySelectionOrPaste.Content" xml:space="preserve">
+    <value>Auswahl kopieren oder Einfügen</value>
+  </data>
+  <data name="UseBuffer" xml:space="preserve">
+    <value>Smart Buffer verwenden</value>
+  </data>
+  <data name="RestartSession.Content" xml:space="preserve">
+    <value>Neu starten</value>
+  </data>
+  <data name="SessionDisconnected.Text" xml:space="preserve">
+    <value>Sitzung wurde getrennt.</value>
   </data>
 </root>

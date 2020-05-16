@@ -1,18 +1,21 @@
-﻿using FluentTerminal.Models;
+﻿using System;
+using FluentTerminal.Models;
 using System.Threading.Tasks;
 
 namespace FluentTerminal.App.ViewModels
 {
-    public interface ITerminalView
+    public interface ITerminalView : IDisposable
     {
-        Task ChangeTheme(TerminalTheme theme);
-        Task ChangeKeyBindings();
-        Task ChangeOptions(TerminalOptions options);
-        Task Initialize(TerminalViewModel viewModel);
+        Task ChangeThemeAsync(TerminalTheme theme);
+        Task ChangeKeyBindingsAsync();
+        Task ChangeOptionsAsync(TerminalOptions options);
+        Task InitializeAsync(TerminalViewModel viewModel);
+        Task ReconnectAsync();
         void DisposalPrepare();
-        Task FindNext(string searchText);
-        Task FindPrevious(string searchText);
-        Task FocusTerminal();
-        Task<string> SerializeXtermState();
+        Task FindNextAsync(SearchRequest request);
+        Task FindPreviousAsync(SearchRequest request);
+        Task FocusTerminalAsync();
+        Task<string> SerializeXtermStateAsync();
+        void Paste(string text);
     }
 }

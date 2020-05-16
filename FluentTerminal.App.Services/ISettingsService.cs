@@ -6,17 +6,6 @@ namespace FluentTerminal.App.Services
 {
     public interface ISettingsService
     {
-        event EventHandler<ApplicationSettings> ApplicationSettingsChanged;
-        event EventHandler<Guid> CurrentThemeChanged;
-        event EventHandler KeyBindingsChanged;
-        event EventHandler<ShellProfile> ShellProfileAdded;
-        event EventHandler<Guid> ShellProfileDeleted;
-        event EventHandler<SshProfile> SshProfileAdded;
-        event EventHandler<Guid> SshProfileDeleted;
-        event EventHandler<TerminalOptions> TerminalOptionsChanged;
-        event EventHandler<Guid> ThemeDeleted;
-        event EventHandler<TerminalTheme> ThemeAdded;
-
         void DeleteShellProfile(Guid id);
         void DeleteSshProfile(Guid id);
         void DeleteTheme(Guid id);
@@ -24,12 +13,14 @@ namespace FluentTerminal.App.Services
         TerminalTheme GetCurrentTheme();
         Guid GetCurrentThemeId();
         ShellProfile GetDefaultShellProfile();
-        SshProfile GetDefaultSshProfile();
         Guid GetDefaultShellProfileId();
-        Guid GetDefaultSshProfileId();
         IDictionary<string, ICollection<KeyBinding>> GetCommandKeyBindings();
         IEnumerable<ShellProfile> GetShellProfiles();
         IEnumerable<SshProfile> GetSshProfiles();
+        /// <summary>
+        /// Returns union of <see cref="GetShellProfiles"/> and <see cref="GetSshProfiles"/>.
+        /// </summary>
+        IEnumerable<ShellProfile> GetAllProfiles();
         IEnumerable<TabTheme> GetTabThemes();
         TerminalOptions GetTerminalOptions();
         TerminalTheme GetTheme(Guid id);
@@ -39,7 +30,6 @@ namespace FluentTerminal.App.Services
         void NotifyApplicationSettingsChanged(ApplicationSettings applicationSettings);
         void SaveCurrentThemeId(Guid id);
         void SaveDefaultShellProfileId(Guid id);
-        void SaveDefaultSshProfileId(Guid id);
         void SaveKeyBindings(string command, ICollection<KeyBinding> keyBindings);
         void SaveShellProfile(ShellProfile shellProfile, bool newShell = false);
         void SaveSshProfile(SshProfile sshProfile, bool newShell = false);
